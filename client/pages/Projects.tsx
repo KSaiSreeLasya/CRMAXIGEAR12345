@@ -86,10 +86,16 @@ export default function Projects() {
       };
 
       if (supabase) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user?.id) {
+          throw new Error('User not authenticated');
+        }
+
         const { data, error } = await supabase
           .from('projects')
           .insert([
             {
+              user_id: userData.user.id,
               customer_name: newProject.customerName,
               contact_no: newProject.contactNo,
               location: newProject.location,
