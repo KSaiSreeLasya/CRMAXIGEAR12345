@@ -104,9 +104,16 @@ export default function Invoice() {
         <div className="bg-white text-black p-8 md:p-12 max-w-4xl mx-auto rounded-lg border border-gray-300 print:border-0 print:rounded-none">
           {/* Header Section */}
           <div className="grid grid-cols-3 gap-8 mb-8 pb-8 border-b border-gray-300">
-            {/* Company Info */}
+            {/* Company Info with Logo */}
             <div>
-              <h1 className="text-2xl font-bold mb-4">{COMPANY_INFO.name}</h1>
+              <div className="flex items-start gap-4 mb-4">
+                <img
+                  src="https://cdn.builder.io/api/v1/image/assets%2F59bf3e928fc9473a97d5e87470c824bb%2F8b737424d5b445559a46780e8d2b4449?format=webp&width=800&height=1200"
+                  alt="AXIGEAR Logo"
+                  className="w-16 h-16 object-contain"
+                />
+                <h1 className="text-2xl font-bold">{COMPANY_INFO.name}</h1>
+              </div>
               <div className="text-sm space-y-1 text-gray-700">
                 <p>{COMPANY_INFO.address}</p>
                 <p>{COMPANY_INFO.city}</p>
