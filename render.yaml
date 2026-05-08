@@ -1,8 +1,15 @@
 services:
   - type: static
     name: axigear-crm
-    buildCommand: npm run build:client
-    staticPublishPath: ./dist/spa
+    env: static
+    buildCommand: npm install && npm run build:client
+    staticPublishPath: dist/spa
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
     routes:
       - path: /*
         destination: /index.html
