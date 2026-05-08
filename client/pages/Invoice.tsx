@@ -87,7 +87,27 @@ export default function Invoice() {
   };
 
   const handleDownloadPDF = () => {
-    window.print();
+    const element = document.getElementById("invoice-container");
+    if (!element) {
+      alert("Invoice not found");
+      return;
+    }
+
+    // Dynamically import html2pdf to avoid SSR issues
+    import("html2pdf.js").then((html2pdfModule) => {
+      const html2pdf = html2pdfModule.default;
+
+      const opt = {
+        margin: 0,
+        filename: `invoice-${invoiceNo.replace(/\//g, "-")}.pdf`,
+        image: { type: "png", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all"] },
+      };
+
+      html2pdf().set(opt).from(element).save();
+    });
   };
 
   return (
@@ -163,35 +183,74 @@ export default function Invoice() {
       {/* Print Styles */}
       <style>{`
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
           body {
             margin: 0;
             padding: 0;
-            background: white;
+            background: white !important;
+            font-family: Arial, sans-serif;
           }
+
           .print\\:hidden {
             display: none !important;
           }
+
+          html, body {
+            width: 100%;
+            height: 100%;
+          }
+
           #invoice-container {
-            max-width: none;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            margin: 0;
-            padding: 0;
-            page-break-after: avoid;
-            break-after: avoid;
+            width: 100%;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 48px !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            background: white !important;
+            color: black !important;
+            display: block !important;
           }
+
           table {
-            page-break-inside: avoid;
-            break-inside: avoid;
+            width: 100%;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            border-collapse: collapse !important;
           }
+
           tr {
-            page-break-inside: avoid;
-            break-inside: avoid;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
-          #invoice-container > div {
-            page-break-inside: avoid;
-            break-inside: avoid;
+
+          td, th {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          img {
+            max-width: 100%;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          div, section {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          @page {
+            margin: 0;
+            size: A4;
           }
         }
       `}</style>
