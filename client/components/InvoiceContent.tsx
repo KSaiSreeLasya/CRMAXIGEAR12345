@@ -106,7 +106,9 @@ export default function InvoiceContent({
           </div>
           <div>
             <p className="text-xs text-gray-600 font-bold">Place of Supply:</p>
-            <p className="font-semibold">36-{placeOfSupply}</p>
+            <p className="font-semibold">
+              {gstType === "cgst-sgst" ? `36-${placeOfSupply}` : placeOfSupply}
+            </p>
           </div>
           <div>
             <p className="text-xs text-gray-600 font-bold">Reverse Charge:</p>
