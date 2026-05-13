@@ -191,3 +191,57 @@ for update using (auth.uid() = user_id);
 drop policy if exists "inventory_delete_own" on public.inventory_items;
 create policy "inventory_delete_own" on public.inventory_items
 for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Attendance enhancements: Weekly Off, optional employee link, monthly payroll
+-- ---------------------------------------------------------------------------
+
+alter table public.attendance drop constraint if exists attendance_status_check;
+alter table public.attendance
+  add constraint attendance_status_check
+  check (status in ('Present', 'Absent', 'Half Day', 'Leave', 'Weekly Off'));
+
+alter table public.attendance add column if not exists employee_id uuid references public.employees (id) on delete set null;
+
+create index if not exists idx_attendance_employee_id on public.attendance (employee_id);
+
+-- One attendance row per user, employee name, and calendar day.
+-- If this fails, remove duplicate rows for the same (user_id, employee_name, attendance_date) first.
+create unique index if not exists idx_attendance_user_employee_name_date
+  on public.attendance (user_id, employee_name, attendance_date);
+
+create table if not exists public.employee_monthly_payroll (
+  id uuid primary key default gen_random_uuid (),
+  user_id uuid not null,
+  employee_id uuid not null references public.employees (id) on delete cascade,
+  year_month date not null,
+  num_presents integer not null default 0,
+  num_weekly_offs integer not null default 0,
+  num_absents integer not null default 0,
+  num_leaves integer not null default 0,
+  paid_days integer not null default 0,
+  gross_salary numeric(14, 2),
+  net_salary numeric(14, 2),
+  updated_at timestamptz not null default now (),
+  unique (user_id, employee_id, year_month)
+);
+
+create index if not exists idx_payroll_user_month on public.employee_monthly_payroll (user_id, year_month desc);
+
+alter table public.employee_monthly_payroll enable row level security;
+
+drop policy if exists "payroll_select_own" on public.employee_monthly_payroll;
+create policy "payroll_select_own" on public.employee_monthly_payroll
+for select using (auth.uid() = user_id);
+
+drop policy if exists "payroll_insert_own" on public.employee_monthly_payroll;
+create policy "payroll_insert_own" on public.employee_monthly_payroll
+for insert with check (auth.uid() = user_id);
+
+drop policy if exists "payroll_update_own" on public.employee_monthly_payroll;
+create policy "payroll_update_own" on public.employee_monthly_payroll
+for update using (auth.uid() = user_id);
+
+drop policy if exists "payroll_delete_own" on public.employee_monthly_payroll;
+create policy "payroll_delete_own" on public.employee_monthly_payroll
+for delete using (auth.uid() = user_id);
