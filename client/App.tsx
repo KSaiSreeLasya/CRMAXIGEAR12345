@@ -24,31 +24,37 @@ const ProtectedRoute = ({ element }: { element: React.ReactNode }) => {
   return isAuthenticated() ? element : <Navigate to="/login" replace />;
 };
 
-function AppRoutes() {
+function AppRoutesContent() {
   useCanonicalUrl();
 
   return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />}
+      />
+      <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+      <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
+      <Route path="/accounts" element={<ProtectedRoute element={<Accounts />} />} />
+      <Route path="/attendance" element={<ProtectedRoute element={<Attendance />} />} />
+      <Route path="/inventory" element={<ProtectedRoute element={<Inventory />} />} />
+      <Route path="/admin-employees" element={<ProtectedRoute element={<AdminEmployees />} />} />
+      <Route
+        path="/estimation-slip/:estimationId"
+        element={<ProtectedRoute element={<EstimationSlip />} />}
+      />
+      <Route path="/invoice/:projectId" element={<ProtectedRoute element={<Invoice />} />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+function AppRoutes() {
+  return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />}
-        />
-        <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
-        <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
-        <Route path="/accounts" element={<ProtectedRoute element={<Accounts />} />} />
-        <Route path="/attendance" element={<ProtectedRoute element={<Attendance />} />} />
-        <Route path="/inventory" element={<ProtectedRoute element={<Inventory />} />} />
-        <Route path="/admin-employees" element={<ProtectedRoute element={<AdminEmployees />} />} />
-        <Route
-          path="/estimation-slip/:estimationId"
-          element={<ProtectedRoute element={<EstimationSlip />} />}
-        />
-        <Route path="/invoice/:projectId" element={<ProtectedRoute element={<Invoice />} />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AppRoutesContent />
     </BrowserRouter>
   );
 }
