@@ -325,9 +325,9 @@ export default function ServiceInvoice() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12 space-y-8">
-        <Button type="button" variant="outline" onClick={() => navigate("/sales")} className="gap-2">
+        <Button type="button" variant="outline" onClick={() => navigate("/dashboard")} className="gap-2">
           <ArrowLeft className="w-4 h-4" />
-          Back to Sales
+          Back to Dashboard
         </Button>
 
         <div>
