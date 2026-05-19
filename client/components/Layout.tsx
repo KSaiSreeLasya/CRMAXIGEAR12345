@@ -4,9 +4,21 @@ import { Menu, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUser, getEmployeeSession, logout } from "@/lib/auth";
 
+const useIsAdmin = () => {
+  const [isAdmin, setIsAdmin] = useState(true);
+
+  useEffect(() => {
+    const employeeSession = getEmployeeSession();
+    setIsAdmin(!employeeSession);
+  }, []);
+
+  return isAdmin;
+};
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileName, setProfileName] = useState("User");
+  const isAdmin = useIsAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,19 +97,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               Inventory
             </Link>
-            <Link
-              to="/admin-employees"
-              className="text-sm font-medium transition-colors hover:text-primary"
-            >
-              Admin
-            </Link>
-            <Link
-              to="/admin-settings"
-              className="text-sm font-medium transition-colors hover:text-primary"
-              title="Admin Settings"
-            >
-              ⚙️
-            </Link>
+            {isAdmin && (
+              <>
+                <Link
+                  to="/admin-employees"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Admin
+                </Link>
+                <Link
+                  to="/admin-settings"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                  title="Admin Settings"
+                >
+                  ⚙️
+                </Link>
+              </>
+            )}
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:text-destructive"
@@ -148,20 +164,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 Inventory
               </Link>
-              <Link
-                to="/admin-employees"
-                className="text-sm font-medium transition-colors hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Admin
-              </Link>
-              <Link
-                to="/admin-settings"
-                className="text-sm font-medium transition-colors hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Settings
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/admin-employees"
+                    className="text-sm font-medium transition-colors hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                  <Link
+                    to="/admin-settings"
+                    className="text-sm font-medium transition-colors hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                </>
+              )}
               <button
                 onClick={() => {
                   handleLogout();
