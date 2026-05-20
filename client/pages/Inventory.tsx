@@ -92,10 +92,14 @@ export default function Inventory() {
     try {
       if (supabase) {
         try {
-          const { data, error } = await supabase
-            .from("inventory_items")
-            .select("*")
-            .order("sl_no", { ascending: true });
+          let query = supabase.from("inventory_items").select("*");
+
+          // If employee is logged in, filter by employee_id
+          if (employeeSession) {
+            query = query.eq("employee_id", employeeSession.employeeId);
+          }
+
+          const { data, error } = await query.order("sl_no", { ascending: true });
           if (error) throw error;
           const rows: InventoryItem[] =
             data?.map((row: any) => ({
@@ -136,16 +140,25 @@ export default function Inventory() {
     try {
       if (supabase) {
         try {
-          const { data: sparesData, error: sparesError } = await supabase
-            .from("spares_inventory")
-            .select("*")
-            .order("created_at", { ascending: false });
+          let sparesQuery = supabase.from("spares_inventory").select("*");
+
+          // If employee is logged in, filter by employee_id
+          if (employeeSession) {
+            sparesQuery = sparesQuery.eq("employee_id", employeeSession.employeeId);
+          }
+
+          const { data: sparesData, error: sparesError } = await sparesQuery.order("created_at", { ascending: false });
           if (sparesError) throw sparesError;
 
           // Fetch sold units from service invoices
-          const { data: invoicesData, error: invoicesError } = await supabase
-            .from("service_invoices")
-            .select("product, unit");
+          let invoicesQuery = supabase.from("service_invoices").select("product, unit");
+
+          // If employee is logged in, also filter service invoices by employee_id
+          if (employeeSession) {
+            invoicesQuery = invoicesQuery.eq("employee_id", employeeSession.employeeId);
+          }
+
+          const { data: invoicesData, error: invoicesError } = await invoicesQuery;
 
           if (invoicesError) {
             console.warn("Could not load service invoices for sold qty calculation:", invoicesError?.message);

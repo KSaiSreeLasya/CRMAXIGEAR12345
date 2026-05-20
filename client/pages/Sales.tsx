@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Trash2, Plus, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { getEmployeeSession } from "@/lib/auth";
 
 interface EstimationRecord {
   id: string;
@@ -43,10 +44,15 @@ export default function Sales() {
     try {
       if (supabase) {
         try {
-          const { data, error } = await supabase
-            .from("estimations")
-            .select("*")
-            .order("created_at", { ascending: false });
+          const employeeSession = getEmployeeSession();
+          let query = supabase.from("estimations").select("*");
+
+          // If employee is logged in, filter by employee_id
+          if (employeeSession) {
+            query = query.eq("employee_id", employeeSession.employeeId);
+          }
+
+          const { data, error } = await query.order("created_at", { ascending: false });
           if (error) {
             console.warn("Supabase error:", error.message);
             throw error;

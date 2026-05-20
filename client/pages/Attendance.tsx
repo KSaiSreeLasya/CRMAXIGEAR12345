@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { getEmployeeSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 /** Matches DB check constraint + MODULES_SQL_SETUP.sql */
@@ -265,11 +266,19 @@ export default function Attendance() {
     const monthEnd = `${ym}-${pad2(daysInMonth(y, m))}`;
 
     if (supabase) {
-      const { data, error } = await supabase
+      const employeeSession = getEmployeeSession();
+      let query = supabase
         .from("attendance")
         .select("*")
         .gte("attendance_date", monthStart)
-        .lte("attendance_date", monthEnd)
+        .lte("attendance_date", monthEnd);
+
+      // If employee is logged in, only show their own attendance
+      if (employeeSession) {
+        query = query.eq("employee_id", employeeSession.employeeId);
+      }
+
+      const { data, error } = await query
         .order("attendance_date", { ascending: true })
         .order("attendance_time", { ascending: false });
       if (error) throw error;
