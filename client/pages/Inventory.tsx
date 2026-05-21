@@ -734,7 +734,7 @@ export default function Inventory() {
                         <th className="px-4 py-2 text-right">Price</th>
                         <th className="px-4 py-2 text-right">Quantity</th>
                         <th className="px-4 py-2 text-right">Total</th>
-                        {isAdmin && <th className="px-4 py-2 text-left">Action</th>}
+                        <th className="px-4 py-2 text-left">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -744,28 +744,26 @@ export default function Inventory() {
                           <td className="px-4 py-2 text-right font-semibold">₹{spare.price.toFixed(2)}</td>
                           <td className="px-4 py-2 text-right">{spare.qty}</td>
                           <td className="px-4 py-2 text-right font-semibold">₹{spare.total.toFixed(2)}</td>
-                          {isAdmin && (
-                            <td className="px-4 py-2">
-                              <div className="flex items-center gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditSpare(spare)}
-                                  className="inline-flex items-center gap-1 text-primary hover:text-primary/90"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDeleteSpare(spare.id)}
-                                  className="inline-flex items-center gap-1 text-destructive hover:text-destructive/90"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          )}
+                          <td className="px-4 py-2">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handleEditSpare(spare)}
+                                className="inline-flex items-center gap-1 text-primary hover:text-primary/90"
+                              >
+                                <Edit className="w-4 h-4" />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteSpare(spare.id)}
+                                className="inline-flex items-center gap-1 text-destructive hover:text-destructive/90"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
