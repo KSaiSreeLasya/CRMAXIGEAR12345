@@ -142,7 +142,27 @@ export default function ServiceInvoice() {
         }
       }
       const raw = localStorage.getItem("crm_service_invoices");
-      if (raw) setInvoices(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as any[];
+        const converted = parsed.map((inv: any) => {
+          if (Array.isArray(inv.products)) {
+            return inv;
+          }
+          if (inv.product) {
+            return {
+              ...inv,
+              products: [{
+                product: inv.product || "",
+                productDescription: inv.productDescription || "",
+                amount: inv.amount || 0,
+                unit: inv.unit || 1,
+              }],
+            };
+          }
+          return { ...inv, products: [] };
+        });
+        setInvoices(converted);
+      }
     } catch (error) {
       console.error("Error loading service invoices:", error);
     } finally {
@@ -189,7 +209,7 @@ export default function ServiceInvoice() {
   };
 
   const calculateTotal = (products: ProductRow[]) => {
-    return products.reduce((sum, p) => sum + (p.amount * p.unit), 0);
+    return (products || []).reduce((sum, p) => sum + ((p.amount || 0) * (p.unit || 1)), 0);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -663,15 +683,15 @@ export default function ServiceInvoice() {
                       <td className="px-4 py-2">{invoice.location}</td>
                       <td className="px-4 py-2 text-sm">
                         <div className="space-y-1">
-                          {invoice.products.map((p, idx) => (
+                          {(invoice.products || []).map((p, idx) => (
                             <div key={idx} className="text-xs">
-                              {p.product} × {p.unit} @ ₹{p.amount.toFixed(2)}
+                              {p.product} × {p.unit || 1} @ ₹{(p.amount || 0).toFixed(2)}
                             </div>
                           ))}
                         </div>
                       </td>
                       <td className="px-4 py-2">{invoice.invoiceDate}</td>
-                      <td className="px-4 py-2 text-right font-semibold">₹{invoice.total.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right font-semibold">₹{(invoice.total || 0).toFixed(2)}</td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
                           <button
