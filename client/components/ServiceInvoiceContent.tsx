@@ -22,7 +22,7 @@ interface ServiceInvoiceRecord {
 }
 
 interface ServiceInvoiceContentProps {
-  invoice: ServiceInvoiceRecord & { unit?: number; total?: number };
+  invoice: ServiceInvoiceRecord & { unit?: number; total?: number; labourCharges?: number; gstEnabled?: boolean; gstAmount?: number };
   gstType: "igst" | "cgst-sgst";
   forPrint?: boolean;
 }
@@ -49,13 +49,16 @@ export default function ServiceInvoiceContent({
   gstType,
   forPrint = false,
 }: ServiceInvoiceContentProps) {
-  const baseAmount = invoice.total || invoice.amount || 0;
-  const taxableAmount = baseAmount;
-  const gstAmount = roundCurrency(baseAmount * 0.05);
-  const totalAmount = roundCurrency(baseAmount + gstAmount);
-  const igstAmount = gstType === "igst" ? gstAmount : 0;
-  const cgstAmount = gstType === "cgst-sgst" ? roundCurrency(gstAmount / 2) : 0;
-  const sgstAmount = gstType === "cgst-sgst" ? roundCurrency(gstAmount - cgstAmount) : 0;
+  const gstEnabled = invoice.gstEnabled !== false;
+  const labourCharges = invoice.labourCharges || 0;
+  const subtotal = (invoice.total || invoice.amount || 0) - (gstEnabled ? (invoice.gstAmount || 0) : 0) - labourCharges;
+  const subtotalWithLabour = subtotal + labourCharges;
+  const taxableAmount = subtotalWithLabour;
+  const gstAmount = gstEnabled ? roundCurrency(subtotalWithLabour * 0.05) : 0;
+  const totalAmount = gstEnabled ? roundCurrency(subtotalWithLabour + gstAmount) : subtotalWithLabour;
+  const igstAmount = gstEnabled && gstType === "igst" ? gstAmount : 0;
+  const cgstAmount = gstEnabled && gstType === "cgst-sgst" ? roundCurrency(gstAmount / 2) : 0;
+  const sgstAmount = gstEnabled && gstType === "cgst-sgst" ? roundCurrency(gstAmount - cgstAmount) : 0;
 
   const containerClass = forPrint
     ? "bg-white text-black p-12 w-full print:p-12"
@@ -210,7 +213,17 @@ export default function ServiceInvoiceContent({
                 ₹{taxableAmount.toFixed(2)}
               </td>
             </tr>
-            {gstType === "cgst-sgst" ? (
+            {labourCharges > 0 && (
+              <tr className="border-b border-gray-400">
+                <td className="px-3 py-2 text-right text-gray-700 font-semibold">
+                  Labour Charges:
+                </td>
+                <td className="px-3 py-2 text-right font-bold text-gray-900">
+                  ₹{labourCharges.toFixed(2)}
+                </td>
+              </tr>
+            )}
+            {gstEnabled && gstType === "cgst-sgst" ? (
               <>
                 <tr className="border-b border-gray-400">
                   <td className="px-3 py-2 text-right text-gray-700 font-semibold">
@@ -229,7 +242,7 @@ export default function ServiceInvoiceContent({
                   </td>
                 </tr>
               </>
-            ) : (
+            ) : gstEnabled ? (
               <tr className="border-b border-gray-400">
                 <td className="px-3 py-2 text-right text-gray-700 font-semibold">
                   IGST (5%):
@@ -238,7 +251,7 @@ export default function ServiceInvoiceContent({
                   ₹{igstAmount.toFixed(2)}
                 </td>
               </tr>
-            )}
+            ) : null}
             <tr className="bg-green-100">
               <td className="px-3 py-2 text-right font-bold text-gray-900">
                 TOTAL AMOUNT:
