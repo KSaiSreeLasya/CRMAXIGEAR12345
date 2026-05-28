@@ -36,6 +36,7 @@ export const setEmployeeSession = (session: {
   employeeId: string;
   employeeName: string;
   employeeRole: string;
+  isAdmin?: boolean;
 }) => {
   localStorage.setItem("auth_token", `employee-${session.employeeId}`);
   localStorage.setItem(EMPLOYEE_SESSION_KEY, JSON.stringify(session));
@@ -45,6 +46,7 @@ export const getEmployeeSession = (): {
   employeeId: string;
   employeeName: string;
   employeeRole: string;
+  isAdmin?: boolean;
 } | null => {
   const raw = localStorage.getItem(EMPLOYEE_SESSION_KEY);
   if (!raw) return null;
@@ -53,4 +55,14 @@ export const getEmployeeSession = (): {
   } catch {
     return null;
   }
+};
+
+export const isAdminUser = (): boolean => {
+  const employeeSession = getEmployeeSession();
+  if (!employeeSession) {
+    // Supabase user with access token is treated as admin
+    return !!localStorage.getItem("auth_token");
+  }
+  // Admin if employee has Admin role or isAdmin flag
+  return employeeSession.isAdmin === true || employeeSession.employeeRole === "Admin";
 };

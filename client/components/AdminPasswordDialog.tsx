@@ -15,6 +15,12 @@ export default function AdminPasswordDialog({ isOpen, onSuccess }: AdminPassword
     return null;
   }
 
+  // Auto-verify if employee has Admin role
+  if (employeeSession.employeeRole === "Admin") {
+    onSuccess();
+    return null;
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");

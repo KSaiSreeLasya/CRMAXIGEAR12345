@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { getEmployeeSession } from "@/lib/auth";
+import { getEmployeeSession, isAdminUser } from "@/lib/auth";
 import AdminPasswordDialog from "@/components/AdminPasswordDialog";
 
 export default function AdminSettings() {
@@ -17,7 +17,7 @@ export default function AdminSettings() {
   const [error, setError] = useState("");
 
   const employeeSession = getEmployeeSession();
-  const isAdmin = !employeeSession;
+  const isAdmin = isAdminUser();
   const [passwordVerified, setPasswordVerified] = useState(isAdmin);
 
   const handleChangePassword = async (e: React.FormEvent) => {

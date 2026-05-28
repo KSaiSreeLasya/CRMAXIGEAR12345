@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { handleDemo } from "./routes/demo";
+import { handleCreateAdminEmployee } from "./routes/admin-setup";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,6 +23,7 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+  app.post("/api/admin/setup-employee", handleCreateAdminEmployee);
 
   // Serve static files from the SPA build directory
   const spaDir = path.join(__dirname, "../dist/spa");

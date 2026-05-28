@@ -2,14 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getCurrentUser, getEmployeeSession, logout } from "@/lib/auth";
+import { getCurrentUser, getEmployeeSession, logout, isAdminUser } from "@/lib/auth";
 
 const useIsAdmin = () => {
   const [isAdmin, setIsAdmin] = useState(true);
 
   useEffect(() => {
-    const employeeSession = getEmployeeSession();
-    setIsAdmin(!employeeSession);
+    setIsAdmin(isAdminUser());
   }, []);
 
   return isAdmin;

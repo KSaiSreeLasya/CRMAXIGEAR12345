@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { getEmployeeSession } from "@/lib/auth";
+import { getEmployeeSession, isAdminUser } from "@/lib/auth";
 import AdminPasswordDialog from "@/components/AdminPasswordDialog";
 
 interface Employee {
@@ -34,7 +34,7 @@ export default function AdminEmployees() {
   const [isSaving, setIsSaving] = useState(false);
 
   const employeeSession = getEmployeeSession();
-  const isAdmin = !employeeSession;
+  const isAdmin = isAdminUser();
   const [passwordVerified, setPasswordVerified] = useState(isAdmin);
 
   useEffect(() => {
