@@ -9,7 +9,8 @@ import EditProjectModal from "@/components/EditProjectModal";
 import { supabase } from "@/lib/supabase";
 import { ImportExport } from "@/components/ImportExport";
 import { SplitPaymentForm, type SplitPayment } from "@/components/SplitPaymentForm";
-import { createTransaction } from "@/lib/transactions";
+import { PaymentHistoryDisplay } from "@/components/PaymentHistoryDisplay";
+import { createTransaction, getTransactionByReference, getSplitPaymentsByReference, updateTransaction, ensureSplitPaymentsMigrated } from "@/lib/transactions";
 
 interface EstimationRecord {
   id: string;
@@ -219,6 +220,15 @@ export default function Projects() {
               })
               .eq("id", editingEstimationId);
             if (error) throw error;
+
+            // Update split payments if they exist
+            const transaction = await getTransactionByReference("estimation", editingEstimationId);
+            if (transaction) {
+              await updateTransaction(transaction.id, estimationSplitPayments);
+            } else if (estimationSplitPayments.length > 0) {
+              // Create transaction if it doesn't exist
+              await createTransaction("estimation", editingEstimationId, payload.amount, estimationSplitPayments);
+            }
           } catch (supabaseError: any) {
             console.error("Error updating estimation in Supabase:", supabaseError?.message);
           }
@@ -327,8 +337,20 @@ export default function Projects() {
     }
   };
 
-  const handleEditEstimation = (item: EstimationRecord) => {
+  const handleEditEstimation = async (item: EstimationRecord) => {
     setEditingEstimationId(item.id);
+
+    // Load split payments from Supabase first, fallback to localStorage
+    let splitPayments = await getSplitPaymentsByReference("estimation", item.id);
+
+    // If no payments in Supabase, check if item has splitPayments from localStorage
+    if (splitPayments.length === 0 && item.splitPayments && item.splitPayments.length > 0) {
+      splitPayments = item.splitPayments;
+      // Migrate to Supabase if they exist in localStorage but not in Supabase
+      await ensureSplitPaymentsMigrated("estimation", item.id, item.amount, splitPayments);
+    }
+
+    setEstimationSplitPayments(splitPayments);
     setEstimationForm({
       estimationSlipNo: item.estimationSlipNo,
       customerName: item.customerName,
@@ -1000,13 +1022,25 @@ export default function Projects() {
                     onChange={(e) => setEstimationForm((prev) => ({ ...prev, leadSource: e.target.value }))}
                   />
 
-                  <div className="md:col-span-2 border border-border rounded-lg p-4">
-                    <h3 className="font-semibold text-sm mb-4">Payment Breakdown (Split Payments)</h3>
-                    <SplitPaymentForm
-                      totalAmount={parseFloat(estimationForm.amount as string) || 0}
-                      initialPayments={estimationSplitPayments}
-                      onPaymentsChange={(payments) => setEstimationSplitPayments(payments)}
-                    />
+                  <div className="md:col-span-2 border border-border rounded-lg p-4 space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-sm mb-4">Payment Breakdown (Split Payments)</h3>
+                      <SplitPaymentForm
+                        totalAmount={parseFloat(estimationForm.amount as string) || 0}
+                        initialPayments={estimationSplitPayments}
+                        onPaymentsChange={(payments) => setEstimationSplitPayments(payments)}
+                      />
+                    </div>
+
+                    {estimationSplitPayments.length > 0 && (
+                      <div className="border-t border-border pt-4">
+                        <h4 className="font-semibold text-sm mb-4">Payment History</h4>
+                        <PaymentHistoryDisplay
+                          payments={estimationSplitPayments}
+                          totalAmount={parseFloat(estimationForm.amount as string) || 0}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <button
