@@ -513,6 +513,16 @@ export default function Projects() {
             .eq('id', id);
 
           if (error) throw error;
+
+          // Handle split payments
+          if (updatedData.splitPayments && updatedData.splitPayments.length > 0) {
+            const existingTransaction = await getTransactionByReference("project", id);
+            if (existingTransaction) {
+              await updateTransaction(existingTransaction.id, updatedData.splitPayments);
+            } else {
+              await createTransaction("project", id, updatedData.amount, updatedData.splitPayments);
+            }
+          }
         } catch (supabaseError) {
           console.error("Error updating project in Supabase:", supabaseError);
           // Fall through to localStorage

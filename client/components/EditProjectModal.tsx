@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import type { Project } from "@/pages/Projects";
 import { supabase } from "@/lib/supabase";
 import { SplitPaymentForm, type SplitPayment } from "@/components/SplitPaymentForm";
+import { getSplitPaymentsByReference } from "@/lib/transactions";
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -64,7 +65,18 @@ export default function EditProjectModal({
         modeOfPayment: project.modeOfPayment || "Cash",
         leadSource: project.leadSource || "",
       });
-      setSplitPayments(project.splitPayments || []);
+
+      // Load split payments from database first, then fallback to project data
+      const loadSplitPayments = async () => {
+        const dbPayments = await getSplitPaymentsByReference("project", project.id);
+        if (dbPayments.length > 0) {
+          setSplitPayments(dbPayments);
+        } else {
+          setSplitPayments(project.splitPayments || []);
+        }
+      };
+
+      void loadSplitPayments();
     }
   }, [project, isOpen]);
 
