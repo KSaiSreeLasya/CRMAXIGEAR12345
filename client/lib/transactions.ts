@@ -60,6 +60,8 @@ export async function createTransaction(
       payment_date: payment.paymentDate,
     }));
 
+    console.log("Inserting split payments:", paymentsToInsert);
+
     const { error: paymentsError } = await supabase.from("split_payments").insert(paymentsToInsert);
 
     if (paymentsError) {
@@ -67,6 +69,7 @@ export async function createTransaction(
       return null;
     }
 
+    console.log("Successfully created transaction with split payments for", referenceType, referenceId);
     return transaction;
   } catch (error) {
     console.error("Error creating transaction:", error);
@@ -195,34 +198,48 @@ export async function getSplitPaymentsByReference(
   if (!supabase) return [];
 
   try {
-    const { data, error } = await supabase
+    // First, get the transaction ID
+    const { data: transaction, error: txError } = await supabase
       .from("transactions")
-      .select(
-        `
-        split_payments (
-          amount,
-          mode_of_payment,
-          payment_date
-        )
-      `
-      )
+      .select("id")
       .eq("reference_type", referenceType)
       .eq("reference_id", referenceId)
       .single();
 
-    if (error && error.code !== "PGRST116") {
-      console.error("Failed to get split payments:", error);
+    if (txError && txError.code !== "PGRST116") {
+      console.warn(`Transaction query error for ${referenceType}:${referenceId}:`, txError);
       return [];
     }
 
-    if (data && data.split_payments && data.split_payments.length > 0) {
-      return data.split_payments.map((sp: any) => ({
+    if (!transaction) {
+      console.debug(`No transaction found for ${referenceType}:${referenceId}`);
+      return [];
+    }
+
+    console.log(`Found transaction ${transaction.id} for ${referenceType}:${referenceId}`);
+
+    // Then fetch split payments for this transaction
+    const { data: payments, error: paymentsError } = await supabase
+      .from("split_payments")
+      .select("amount, mode_of_payment, payment_date")
+      .eq("transaction_id", transaction.id)
+      .order("payment_date", { ascending: true });
+
+    if (paymentsError) {
+      console.error("Failed to get split payments:", paymentsError);
+      return [];
+    }
+
+    if (payments && payments.length > 0) {
+      console.log(`Loaded ${payments.length} split payments for transaction ${transaction.id}:`, payments);
+      return payments.map((sp: any) => ({
         amount: sp.amount,
         modeOfPayment: sp.mode_of_payment,
         paymentDate: sp.payment_date,
       }));
     }
 
+    console.debug(`No split payments found for transaction ${transaction.id}`);
     return [];
   } catch (error) {
     console.error("Error fetching split payments:", error);
