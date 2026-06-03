@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,13 @@ export function SplitPaymentForm({
       ? initialPayments
       : [{ amount: 0, modeOfPayment: "Cash", paymentDate: new Date().toISOString().split("T")[0] }]
   );
+
+  // Update payments when initialPayments change
+  useEffect(() => {
+    if (initialPayments.length > 0) {
+      setPayments(initialPayments);
+    }
+  }, [initialPayments]);
 
   const paymentMethods = ["Cash", "Card", "UPI", "Cheque", "Other"] as const;
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -103,7 +110,7 @@ export function SplitPaymentForm({
                 type="number"
                 min="0"
                 step="0.01"
-                value={payment.amount || ""}
+                value={payment.amount}
                 onChange={(e) => handlePaymentChange(index, "amount", e.target.value)}
                 disabled={disabled}
                 className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
