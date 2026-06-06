@@ -534,14 +534,15 @@ export default function ServiceInvoice() {
     resetSplitPayments();
   };
 
-  const handleDownloadPDF = (invoice: ServiceInvoiceRecord) => {
-    const element = document.getElementById(`service-invoice-${invoice.id}`);
-    if (!element) {
-      alert("Invoice not found");
-      return;
-    }
+  const handleDownloadPDF = async (invoice: ServiceInvoiceRecord) => {
+    try {
+      const element = document.getElementById(`service-invoice-${invoice.id}`);
+      if (!element) {
+        alert("Invoice not found");
+        return;
+      }
 
-    import("html2pdf.js").then((html2pdfModule) => {
+      const html2pdfModule = await import("html2pdf.js");
       const html2pdf = html2pdfModule.default;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-").split("T").join("_").slice(0, -5);
       const cleanInvoiceNo = invoice.serviceInvoiceNo.replace(/\//g, "-");
@@ -568,8 +569,11 @@ export default function ServiceInvoice() {
         pagebreak: { mode: ["css", "legacy"] },
       };
 
-      html2pdf().set(opt).from(element).save();
-    });
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
   };
 
   const currentPreview = previewId ? invoices.find((inv) => inv.id === previewId) : null;

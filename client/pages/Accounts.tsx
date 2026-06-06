@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Trash2, Download } from "lucide-react";
 
 interface EstimationRecord {
   id: string;
@@ -580,8 +580,8 @@ export default function Accounts() {
                               to={`/estimation-slip/${item.id}`}
                               className="inline-flex items-center gap-1.5 text-primary hover:text-primary/90 font-medium text-sm"
                             >
-                              <FileText className="w-4 h-4 shrink-0" />
-                              View slip
+                              <Download className="w-4 h-4 shrink-0" />
+                              Download/Preview
                             </Link>
                             <button
                               type="button"

@@ -118,14 +118,15 @@ export default function EstimationSlip() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    const element = document.getElementById("estimation-slip-container");
-    if (!element || !estimation) {
-      alert("Estimation slip not found");
-      return;
-    }
+  const handleDownloadPDF = async () => {
+    try {
+      const element = document.getElementById("estimation-slip-container");
+      if (!element || !estimation) {
+        alert("Estimation slip not found");
+        return;
+      }
 
-    import("html2pdf.js").then((html2pdfModule) => {
+      const html2pdfModule = await import("html2pdf.js");
       const html2pdf = html2pdfModule.default;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-").split("T").join("_").slice(0, -5);
       const cleanSlipNo = estimation.estimationSlipNo.replace(/\//g, "-");
@@ -152,8 +153,11 @@ export default function EstimationSlip() {
         pagebreak: { mode: ["css", "legacy"] },
       };
 
-      html2pdf().set(opt).from(element).save();
-    });
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
   };
 
   if (isLoading) {
