@@ -28,6 +28,10 @@ interface InventoryItem {
   createdAt: string;
 }
 
+interface ChassisInputState {
+  inputs: string[];
+}
+
 interface SpareItem {
   id: string;
   partName: string;
@@ -65,6 +69,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [chassisInputs, setChassisInputs] = useState<ChassisInputState>({ inputs: [""] });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -209,6 +214,12 @@ export default function Inventory() {
       const salesCount = Number(form.salesCount || 0);
       const closingStock = vehicleCount - salesCount;
 
+      // Build chassis string from individual inputs
+      const chassisString = chassisInputs.inputs
+        .map((c) => c.trim())
+        .filter((c) => c)
+        .join(", ");
+
       const payload = {
         slNo: Number(form.slNo || 0),
         modelNo: form.modelNo.trim(),
@@ -216,7 +227,7 @@ export default function Inventory() {
         vehicleModel: form.vehicleModel.trim(),
         hsnNo: form.hsnNo.trim(),
         vehicleCount,
-        chassisNo: form.chassisNo.trim(),
+        chassisNo: chassisString,
         motorNo: form.motorNo.trim(),
         batteryNo: form.batteryNo.trim(),
         manufacturerInvNo: form.manufacturerInvNo.trim(),
@@ -378,12 +389,36 @@ export default function Inventory() {
       batteryCount: String(item.batteryCount),
       salesCount: String(item.salesCount),
     });
+    // Parse existing chassis numbers into inputs array
+    const chassis = item.chassisNo
+      ? item.chassisNo.split(",").map((c) => c.trim()).filter((c) => c)
+      : [""];
+    setChassisInputs({ inputs: chassis.length > 0 ? chassis : [""] });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setForm(DEFAULT_FORM);
+    setChassisInputs({ inputs: [""] });
+  };
+
+  const addChassisInput = () => {
+    setChassisInputs((prev) => ({
+      inputs: [...prev.inputs, ""],
+    }));
+  };
+
+  const removeChassisInput = (index: number) => {
+    setChassisInputs((prev) => ({
+      inputs: prev.inputs.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateChassisInput = (index: number, value: string) => {
+    setChassisInputs((prev) => ({
+      inputs: prev.inputs.map((input, i) => (i === index ? value : input)),
+    }));
   };
 
   const handleSaveSpare = async (e: React.FormEvent) => {
@@ -814,7 +849,39 @@ export default function Inventory() {
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Vehicle Model" value={form.vehicleModel} onChange={(e) => setForm((prev) => ({ ...prev, vehicleModel: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="HSN No" value={form.hsnNo} onChange={(e) => setForm((prev) => ({ ...prev, hsnNo: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" type="number" placeholder="Vehicle Count" value={form.vehicleCount} onChange={(e) => setForm((prev) => ({ ...prev, vehicleCount: e.target.value }))} />
-                <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Chassis No (comma separated if many)" value={form.chassisNo} onChange={(e) => setForm((prev) => ({ ...prev, chassisNo: e.target.value }))} />
+                {/* Chassis No Manager */}
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold mb-3">Chassis No</label>
+                  <div className="space-y-2">
+                    {chassisInputs.inputs.map((chassis, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder={`Chassis No ${index + 1}`}
+                          value={chassis}
+                          onChange={(e) => updateChassisInput(index, e.target.value)}
+                          className="flex-1 px-4 py-2 border border-border rounded-lg bg-background"
+                        />
+                        {chassisInputs.inputs.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeChassisInput(index)}
+                            className="px-3 py-2 border border-destructive rounded-lg text-destructive hover:bg-destructive/10 transition-colors font-semibold"
+                          >
+                            −
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addChassisInput}
+                      className="px-4 py-2 border border-primary rounded-lg text-primary hover:bg-primary/10 transition-colors font-semibold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Motor No" value={form.motorNo} onChange={(e) => setForm((prev) => ({ ...prev, motorNo: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Battery No" value={form.batteryNo} onChange={(e) => setForm((prev) => ({ ...prev, batteryNo: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Manufact. Inv No" value={form.manufacturerInvNo} onChange={(e) => setForm((prev) => ({ ...prev, manufacturerInvNo: e.target.value }))} />
