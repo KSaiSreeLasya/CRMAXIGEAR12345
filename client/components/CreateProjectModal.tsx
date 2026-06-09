@@ -171,7 +171,9 @@ export default function CreateProjectModal({
         const uniqueChassis = new Set<string>();
         data?.forEach((row: any) => {
           if (row.chassis_no) {
-            uniqueChassis.add(row.chassis_no);
+            // Split comma-separated chassis numbers into individual items
+            const parts = row.chassis_no.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+            parts.forEach((part: string) => uniqueChassis.add(part));
           }
         });
         chassisNumbers = Array.from(uniqueChassis).sort();
@@ -184,7 +186,9 @@ export default function CreateProjectModal({
             (row.brand || "").toLowerCase().includes(modelInput.toLowerCase()) &&
             row.chassisNo
           ) {
-            uniqueChassis.add(row.chassisNo);
+            // Split comma-separated chassis numbers into individual items
+            const parts = row.chassisNo.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+            parts.forEach((part: string) => uniqueChassis.add(part));
           }
         });
         chassisNumbers = Array.from(uniqueChassis).sort();
