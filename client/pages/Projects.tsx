@@ -60,6 +60,7 @@ export interface Project {
   leadSource: string;
   gstNo?: string;
   splitPayments?: SplitPayment[];
+  showSplitPaymentDetails?: boolean;
   createdAt: string;
 }
 
@@ -428,6 +429,7 @@ export default function Projects() {
         modeOfPayment: newProject.modeOfPayment,
         leadSource: newProject.leadSource,
         splitPayments: splitPayments,
+        showSplitPaymentDetails: newProject.showSplitPaymentDetails,
         createdAt: new Date().toLocaleDateString(),
       };
 
@@ -459,6 +461,7 @@ export default function Projects() {
                 amount: newProject.amount,
                 mode_of_payment: newProject.modeOfPayment,
                 lead_source: newProject.leadSource || null,
+                show_split_payment_details: newProject.showSplitPaymentDetails ?? false,
               }
             ])
             .select();
@@ -484,6 +487,7 @@ export default function Projects() {
             modeOfPayment: data[0].mode_of_payment || "Cash",
             leadSource: data[0].lead_source || "",
             splitPayments: splitPayments,
+            showSplitPaymentDetails: data[0].show_split_payment_details ?? false,
             createdAt: new Date(data[0].created_at).toLocaleDateString(),
           };
 
@@ -561,6 +565,7 @@ export default function Projects() {
               amount: updatedData.amount,
               mode_of_payment: updatedData.modeOfPayment,
               lead_source: updatedData.leadSource || null,
+              show_split_payment_details: updatedData.showSplitPaymentDetails ?? false,
             })
             .eq('id', id);
 
