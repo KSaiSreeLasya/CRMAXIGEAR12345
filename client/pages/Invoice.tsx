@@ -19,6 +19,9 @@ export default function Invoice() {
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
   const settingsKey = projectId ? `crm_invoice_settings_${projectId}` : null;
 
+  // Show split payment details based on project setting
+  const showSplitPaymentDetails = project?.showSplitPaymentDetails ?? false;
+
   useEffect(() => {
     if (projectId) {
       loadProject();
@@ -332,6 +335,8 @@ export default function Invoice() {
             invoiceNo={invoiceNo}
             gstType={gstType}
             placeOfSupply={placeOfSupply}
+            splitPayments={splitPayments}
+            showSplitPaymentDetails={showSplitPaymentDetails}
             forPrint={false}
           />
         </div>

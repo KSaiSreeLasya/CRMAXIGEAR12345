@@ -45,6 +45,7 @@ export default function EditProjectModal({
   const [availableChassisNumbers, setAvailableChassisNumbers] = useState<string[]>([]);
   const [showChassisDropdown, setShowChassisDropdown] = useState(false);
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
+  const [showSplitPaymentDetails, setShowSplitPaymentDetails] = useState(false);
 
   useEffect(() => {
     if (project) {
@@ -67,6 +68,7 @@ export default function EditProjectModal({
         leadSource: project.leadSource || "",
         gstNo: project.gstNo || "",
       });
+      setShowSplitPaymentDetails(project.showSplitPaymentDetails ?? false);
 
       // Load fresh split payments from database
       loadSplitPayments();
@@ -161,6 +163,7 @@ export default function EditProjectModal({
       leadSource: formData.leadSource,
       gstNo: formData.gstNo,
       splitPayments: splitPayments,
+      showSplitPaymentDetails,
     });
 
     onClose();
@@ -613,6 +616,20 @@ export default function EditProjectModal({
                 initialPayments={splitPayments}
                 onPaymentsChange={(payments) => setSplitPayments(payments)}
               />
+            </div>
+
+            {/* Display Split Payment Details Checkbox */}
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-border">
+              <input
+                type="checkbox"
+                id="showSplitPaymentDetails"
+                checked={showSplitPaymentDetails}
+                onChange={(e) => setShowSplitPaymentDetails(e.target.checked)}
+                className="w-4 h-4 border border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="showSplitPaymentDetails" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Display split payment details in invoice (e.g., "Cash: ₹30,000, UPI: ₹30,000")
+              </label>
             </div>
 
             {/* Form Actions */}
