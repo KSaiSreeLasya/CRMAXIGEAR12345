@@ -121,39 +121,26 @@ export default function Projects() {
             throw error;
           }
 
-          const formattedProjects = await Promise.all(
-            data?.map(async (project: any) => {
-              let splitPayments: SplitPayment[] = [];
-              try {
-                const payments = await getSplitPaymentsByReference("project", project.id);
-                splitPayments = payments;
-              } catch (err) {
-                console.warn(`Could not load split payments for project ${project.id}:`, err);
-              }
-
-              return {
-                id: project.id,
-                modelNo: project.model_no || "",
-                customerName: project.customer_name,
-                contactNo: project.contact_no,
-                location: project.location,
-                productDescription: project.product_description,
-                hsnNo: project.hsn_no,
-                chassisNo: project.chassis_no,
-                motorNo: project.motor_no || "",
-                batteryNo: project.battery_no || "",
-                batteryWarranty: project.battery_warranty || "",
-                batteryCapacity: project.battery_capacity || "",
-                vehicleWarranty: project.vehicle_warranty || "",
-                invoiceDate: project.invoice_date || "",
-                amount: project.amount,
-                modeOfPayment: project.mode_of_payment || "Cash",
-                leadSource: project.lead_source || "",
-                splitPayments,
-                createdAt: new Date(project.created_at).toLocaleDateString(),
-              };
-            }) || []
-          );
+          const formattedProjects = data?.map((project: any) => ({
+            id: project.id,
+            modelNo: project.model_no || "",
+            customerName: project.customer_name,
+            contactNo: project.contact_no,
+            location: project.location,
+            productDescription: project.product_description,
+            hsnNo: project.hsn_no,
+            chassisNo: project.chassis_no,
+            motorNo: project.motor_no || "",
+            batteryNo: project.battery_no || "",
+            batteryWarranty: project.battery_warranty || "",
+            batteryCapacity: project.battery_capacity || "",
+            vehicleWarranty: project.vehicle_warranty || "",
+            invoiceDate: project.invoice_date || "",
+            amount: project.amount,
+            modeOfPayment: project.mode_of_payment || "Cash",
+            leadSource: project.lead_source || "",
+            createdAt: new Date(project.created_at).toLocaleDateString(),
+          })) || [];
 
           setProjects(formattedProjects);
           return;
