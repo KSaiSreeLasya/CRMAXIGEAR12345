@@ -3,6 +3,7 @@ interface ProductRow {
   productDescription: string;
   amount: number;
   unit: number;
+  gstRate?: number;
 }
 
 interface DealerInvoiceRecord {
@@ -12,6 +13,10 @@ interface DealerInvoiceRecord {
   contactNo: string;
   location: string;
   invoiceDate: string;
+  dueDate?: string;
+  poNumber?: string;
+  sentTo?: string;
+  shipTo?: string;
   products?: ProductRow[];
   product?: string;
   productDescription?: string;
@@ -65,7 +70,18 @@ export default function DealerInvoiceContent({
   const subtotal = products.reduce((sum, p) => sum + (p.amount * p.unit), 0);
   const subtotalWithLabour = subtotal + labourCharges;
   const taxableAmount = subtotalWithLabour;
-  const gstAmount = gstEnabled ? roundCurrency(subtotalWithLabour * 0.18) : 0;
+
+  // Calculate GST per product based on their individual rates
+  let totalProductGst = 0;
+  products.forEach((p) => {
+    const productLineTotal = p.amount * p.unit;
+    const gstRate = (p.gstRate || 18) / 100;
+    totalProductGst += roundCurrency(productLineTotal * gstRate);
+  });
+
+  // Add labour GST (18% default)
+  const labourGst = gstEnabled && labourCharges > 0 ? roundCurrency(labourCharges * 0.18) : 0;
+  const gstAmount = gstEnabled ? totalProductGst + labourGst : 0;
   const totalAmount = gstEnabled ? roundCurrency(subtotalWithLabour + gstAmount) : subtotalWithLabour;
   const igstAmount = gstEnabled && gstType === "igst" ? gstAmount : 0;
   const cgstAmount = gstEnabled && gstType === "cgst-sgst" ? roundCurrency(gstAmount / 2) : 0;
@@ -114,6 +130,18 @@ export default function DealerInvoiceContent({
           <p className="text-xs text-gray-600 font-bold">Invoice Date:</p>
           <p className="font-semibold">{invoice.invoiceDate || invoice.createdAt}</p>
         </div>
+        {invoice.dueDate && (
+          <div>
+            <p className="text-xs text-gray-600 font-bold">Due Date:</p>
+            <p className="font-semibold">{invoice.dueDate}</p>
+          </div>
+        )}
+        {invoice.poNumber && (
+          <div>
+            <p className="text-xs text-gray-600 font-bold">P.O.#:</p>
+            <p className="font-semibold">{invoice.poNumber}</p>
+          </div>
+        )}
         <div>
           <p className="text-xs text-gray-600 font-bold">Place of Supply:</p>
           <p className="font-semibold">36-TG</p>
@@ -131,6 +159,22 @@ export default function DealerInvoiceContent({
           <p className="text-gray-700">{invoice.contactNo}</p>
           <p className="text-gray-700">{invoice.location}</p>
         </div>
+        {(invoice.sentTo || invoice.shipTo) && (
+          <div className="mt-4 pt-4 border-t border-gray-300">
+            {invoice.sentTo && (
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-gray-700">Sent To:</p>
+                <p className="text-gray-700">{invoice.sentTo}</p>
+              </div>
+            )}
+            {invoice.shipTo && (
+              <div className="text-xs space-y-1 mt-2">
+                <p className="font-bold text-gray-700">Ship To:</p>
+                <p className="text-gray-700">{invoice.shipTo}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div>
         <p className="text-xs font-bold text-gray-700 mb-2">BANK DETAILS:</p>
@@ -168,6 +212,9 @@ export default function DealerInvoiceContent({
               Amount (₹)
             </th>
             <th className="text-right px-3 py-2 font-bold text-gray-700">
+              GST %
+            </th>
+            <th className="text-right px-3 py-2 font-bold text-gray-700">
               Total (₹)
             </th>
           </tr>
@@ -182,6 +229,9 @@ export default function DealerInvoiceContent({
               </td>
               <td className="px-3 py-2 text-right text-gray-900">
                 {roundCurrency(product.amount).toFixed(2)}
+              </td>
+              <td className="px-3 py-2 text-right text-gray-700 font-medium">
+                {product.gstRate || 18}%
               </td>
               <td className="px-3 py-2 text-right text-gray-900 font-medium">
                 {roundCurrency(product.amount * product.unit).toFixed(2)}
