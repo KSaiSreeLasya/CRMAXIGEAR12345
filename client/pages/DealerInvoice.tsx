@@ -9,7 +9,6 @@ import DealerInvoiceContent from "@/components/DealerInvoiceContent";
 import { ImportExport } from "@/components/ImportExport";
 import { SplitPaymentForm, type SplitPayment } from "@/components/SplitPaymentForm";
 import { PaymentHistoryDisplay } from "@/components/PaymentHistoryDisplay";
-import { createTransaction, getTransactionByReference, getSplitPaymentsByReference, updateTransaction } from "@/lib/transactions";
 
 interface ProductRow {
   id?: string;
@@ -17,6 +16,7 @@ interface ProductRow {
   productDescription: string;
   amount: number;
   unit: number;
+  gstRate: number; // 5 or 18
 }
 
 interface DealerInvoiceRecord {
@@ -27,6 +27,10 @@ interface DealerInvoiceRecord {
   contactNo: string;
   location: string;
   invoiceDate: string;
+  dueDate: string;
+  poNumber: string;
+  sentTo: string;
+  shipTo: string;
   products: ProductRow[];
   total: number;
   labourCharges: number;
@@ -43,6 +47,7 @@ const DEFAULT_PRODUCT_ROW: ProductRow = {
   productDescription: "",
   amount: 0,
   unit: 1,
+  gstRate: 18,
 };
 
 interface InvoiceForm {
@@ -51,6 +56,10 @@ interface InvoiceForm {
   contactNo: string;
   location: string;
   invoiceDate: string;
+  dueDate: string;
+  poNumber: string;
+  sentTo: string;
+  shipTo: string;
   labourCharges: number;
   gstEnabled: boolean;
   modeOfPayment: string;
@@ -65,6 +74,10 @@ const createDefaultForm = (): InvoiceForm => ({
   contactNo: "",
   location: "",
   invoiceDate: new Date().toISOString().split("T")[0],
+  dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  poNumber: "",
+  sentTo: "",
+  shipTo: "",
   labourCharges: 0,
   gstEnabled: true,
   modeOfPayment: "Cash",
@@ -186,8 +199,20 @@ export default function DealerInvoice() {
       0
     );
     const taxableTotal = productTotal + labour;
-    const gstAmount = Math.round(taxableTotal * 0.18);
-    return { productTotal, taxableTotal, gstAmount, total: taxableTotal + gstAmount };
+
+    // Calculate GST per product
+    let totalGst = 0;
+    products.forEach((product) => {
+      const productLineTotal = product.amount * product.unit;
+      const gstRate = (product.gstRate || 18) / 100;
+      totalGst += Math.round(productLineTotal * gstRate);
+    });
+
+    // Add labour GST if applicable
+    const labourGstRate = 0.18; // Default to 18% for labour
+    totalGst += Math.round(labour * labourGstRate);
+
+    return { productTotal, taxableTotal, gstAmount: totalGst, total: taxableTotal + totalGst };
   };
 
   const saveInvoice = async (finalSplitPayments: SplitPayment[] = []) => {
@@ -210,6 +235,10 @@ export default function DealerInvoice() {
         contactNo: form.contactNo,
         location: form.location,
         invoiceDate: form.invoiceDate,
+        dueDate: form.dueDate,
+        poNumber: form.poNumber,
+        sentTo: form.sentTo,
+        shipTo: form.shipTo,
         products: form.products,
         total,
         labourCharges: form.labourCharges,
@@ -249,32 +278,6 @@ export default function DealerInvoice() {
       }
 
       localStorage.setItem("crm_dealer_invoices", JSON.stringify(invoicesList));
-
-      // Handle transactions/split payments
-      if (finalSplitPayments.length > 0 && record.modeOfPayment !== "Cash") {
-        try {
-          const existingTransaction = await getTransactionByReference(record.dealerInvoiceNo);
-
-          if (existingTransaction) {
-            await updateTransaction(
-              existingTransaction.id,
-              record.total,
-              form.modeOfPayment,
-              new Date().toISOString()
-            );
-          } else {
-            await createTransaction(
-              record.dealerInvoiceNo,
-              record.total,
-              form.modeOfPayment,
-              "Dealer Invoice",
-              new Date().toISOString()
-            );
-          }
-        } catch (error) {
-          console.warn("Transaction save failed:", error);
-        }
-      }
 
       setInvoices(invoicesList);
       setForm(DEFAULT_FORM);
@@ -317,6 +320,10 @@ export default function DealerInvoice() {
         contactNo: invoice.contactNo,
         location: invoice.location,
         invoiceDate: invoice.invoiceDate,
+        dueDate: invoice.dueDate || "",
+        poNumber: invoice.poNumber || "",
+        sentTo: invoice.sentTo || "",
+        shipTo: invoice.shipTo || "",
         products: invoice.products,
         labourCharges: invoice.labourCharges,
         gstEnabled: invoice.gstEnabled,
@@ -473,6 +480,65 @@ export default function DealerInvoice() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={(e) =>
+                    setForm({ ...form, dueDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  P.O.# (Purchase Order Number)
+                </label>
+                <input
+                  type="text"
+                  value={form.poNumber}
+                  onChange={(e) =>
+                    setForm({ ...form, poNumber: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="e.g., PO-12345"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Sent To
+                </label>
+                <input
+                  type="text"
+                  value={form.sentTo}
+                  onChange={(e) =>
+                    setForm({ ...form, sentTo: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Contact person name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Ship To
+                </label>
+                <input
+                  type="text"
+                  value={form.shipTo}
+                  onChange={(e) =>
+                    setForm({ ...form, shipTo: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Shipping address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
                   Mode of Payment
                 </label>
                 <select
@@ -573,6 +639,19 @@ export default function DealerInvoice() {
                       }}
                       className="w-24 px-3 py-2 border rounded-md text-sm"
                     />
+                    <select
+                      value={product.gstRate || 18}
+                      onChange={(e) => {
+                        const updated = [...form.products];
+                        updated[idx].gstRate = parseFloat(e.target.value);
+                        setForm({ ...form, products: updated });
+                      }}
+                      className="w-20 px-3 py-2 border rounded-md text-sm"
+                      title="GST Rate"
+                    >
+                      <option value="5">GST 5%</option>
+                      <option value="18">GST 18%</option>
+                    </select>
                     <span className="w-24 px-3 py-2 text-sm font-medium">
                       ₹{(product.amount * product.unit).toFixed(2)}
                     </span>
