@@ -167,11 +167,50 @@ export default function DealerInvoice() {
             .from("dealers_invoices")
             .select("*");
           if (data) {
-            setInvoices(data);
+            // Transform Supabase data to match our format and fetch related items
+            const transformedInvoices = await Promise.all(
+              data.map(async (invoice: any) => {
+                // Fetch items for this invoice
+                const { data: items } = await supabase
+                  .from("dealers_invoice_items")
+                  .select("*")
+                  .eq("invoice_id", invoice.id);
+
+                return {
+                  id: invoice.id,
+                  dealerInvoiceNo: invoice.invoice_number,
+                  dealerName: invoice.dealer_name,
+                  dealerId: invoice.dealer_id,
+                  contactNo: invoice.contact_no,
+                  location: invoice.location,
+                  invoiceDate: invoice.invoice_date,
+                  dueDate: invoice.due_date,
+                  poNumber: invoice.purchase_order_no,
+                  sentTo: invoice.sent_to,
+                  shipTo: invoice.ship_to,
+                  modeOfPayment: invoice.mode_of_payment,
+                  leadSource: invoice.lead_source,
+                  labourCharges: invoice.labour_charges || 0,
+                  total: invoice.total_amount || 0,
+                  gstEnabled: true,
+                  gstAmount: invoice.total_gst_amount || 0,
+                  createdAt: invoice.created_at,
+                  products: items ? items.map((item: any) => ({
+                    id: item.id,
+                    product: item.product_name,
+                    productDescription: item.product_description,
+                    amount: item.unit_price || 0,
+                    unit: item.quantity || 1,
+                    gstRate: item.gst_rate || 18,
+                  })) : [],
+                };
+              })
+            );
+            setInvoices(transformedInvoices);
             return;
           }
         } catch (error) {
-          console.warn("Supabase dealers_invoices fetch failed, using localStorage");
+          console.warn("Supabase dealers_invoices fetch failed, using localStorage", error);
         }
       }
 
@@ -264,6 +303,7 @@ export default function DealerInvoice() {
         lead_source: form.leadSource || null,
         labour_charges: form.labourCharges || 0,
         subtotal: productTotal,
+        gst_enabled: form.gstEnabled,
         total_gst_amount: gstAmount,
         total_amount: total,
         payment_status: "pending",
