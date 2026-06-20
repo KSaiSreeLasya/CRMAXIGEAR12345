@@ -3,11 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import ws from "ws";
 
 const getSupabaseClient = () => {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  // Try both VITE_ prefixed (from .env) and non-prefixed versions
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing env vars:", {
+      url: !!supabaseUrl,
+      key: !!supabaseKey,
+      available: Object.keys(process.env).filter(k => k.includes('SUPABASE')),
+    });
     throw new Error("Supabase configuration missing");
   }
 
