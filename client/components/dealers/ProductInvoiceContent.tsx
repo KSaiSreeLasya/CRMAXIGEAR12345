@@ -48,7 +48,7 @@ export default function ProductInvoiceContent({
 }: ProductInvoiceContentProps) {
   const unitPrice = product.amount || 0;
   const lineAmount = roundCurrency(unitPrice * product.no_of_vehicles);
-  const gstAmount = roundCurrency(lineAmount * 0.18);
+  const gstAmount = roundCurrency(lineAmount * 0.10);
   const totalAmount = roundCurrency(lineAmount + gstAmount);
   const igstAmount = gstType === "igst" ? gstAmount : 0;
   const cgstAmount = gstType === "cgst-sgst" ? roundCurrency(gstAmount / 2) : 0;
@@ -175,17 +175,17 @@ export default function ProductInvoiceContent({
 
             {gstType === "igst" ? (
               <div className="flex justify-between text-sm border-b border-gray-300 pb-2">
-                <span className="text-gray-700 font-medium">IGST (18%)</span>
+                <span className="text-gray-700 font-medium">IGST (10%)</span>
                 <span className="font-semibold text-gray-900">₹{igstAmount.toFixed(2)}</span>
               </div>
             ) : (
               <>
                 <div className="flex justify-between text-sm border-b border-gray-300 pb-2">
-                  <span className="text-gray-700 font-medium">CGST (9%)</span>
+                  <span className="text-gray-700 font-medium">CGST (5%)</span>
                   <span className="font-semibold text-gray-900">₹{cgstAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm border-b border-gray-300 pb-2">
-                  <span className="text-gray-700 font-medium">SGST (9%)</span>
+                  <span className="text-gray-700 font-medium">SGST (5%)</span>
                   <span className="font-semibold text-gray-900">₹{sgstAmount.toFixed(2)}</span>
                 </div>
               </>
