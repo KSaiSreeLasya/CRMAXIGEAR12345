@@ -191,7 +191,7 @@ export default function DealersProductInvoice() {
 
   const calculateInvoiceTotal = (unitPrice: number, quantity: number, gstEnabled: boolean) => {
     const amount = unitPrice * quantity;
-    const gstAmount = gstEnabled ? Math.round(amount * 0.18) : 0;
+    const gstAmount = gstEnabled ? Math.round(amount * 0.10) : 0;
     return { amount, gstAmount, total: amount + gstAmount };
   };
 
