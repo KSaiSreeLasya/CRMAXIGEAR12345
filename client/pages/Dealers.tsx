@@ -38,9 +38,18 @@ export default function Dealers() {
   };
 
   const addDealer = async (dealer: Omit<Dealer, "id">) => {
-    const newDealer = await addDMSDealer(dealer as any);
-    if (newDealer) {
-      setDealers([...dealers, newDealer]);
+    try {
+      const newDealer = await addDMSDealer(dealer as any);
+      if (newDealer) {
+        setDealers([...dealers, newDealer]);
+        return true;
+      } else {
+        console.error("Failed to add dealer: No data returned from insert");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error in addDealer:", error);
+      return false;
     }
   };
 

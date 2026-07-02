@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export interface Dealer {
   id?: string;
@@ -73,7 +74,7 @@ export async function fetchDMSDealers() {
 export async function addDMSDealer(dealer: Omit<DMSDealer, "id" | "created_at">) {
   if (!supabase) return null;
 
-  const dealerId = crypto.randomUUID();
+  const dealerId = uuidv4();
   const { data, error } = await supabase
     .from("dms_dealers")
     .insert([
@@ -86,19 +87,13 @@ export async function addDMSDealer(dealer: Omit<DMSDealer, "id" | "created_at">)
         phone: dealer.phone || null,
         location: dealer.location || "Not Specified",
         manager_name: dealer.manager_name || null,
-        logo_url: dealer.logo_url || null,
-        company_name: dealer.company_name || null,
-        incorporation_no: dealer.incorporation_no || null,
-        dba_name: dealer.dba_name || null,
-        legal_structure: dealer.legal_structure || "",
-        ownership_details: dealer.ownership_details || null,
-        registered_address: dealer.registered_address || null,
       },
     ])
-    .select();
+    .select("id,name,code,email,password,phone,location,manager_name");
 
   if (error) {
     console.error("Error adding DMS dealer:", error);
+    console.error("Error details:", error.message, error.details);
     return null;
   }
   return data?.[0] || null;

@@ -91,7 +91,7 @@ export default function DealersTab({
 
     setIsSubmitting(true);
     try {
-      await onAddDealer({
+      const result = await onAddDealer({
         name: formData.name,
         code: formData.code,
         email: formData.email,
@@ -100,6 +100,12 @@ export default function DealersTab({
         location: formData.location,
         manager_name: formData.manager_name,
       });
+
+      if (result === false) {
+        toast.error("Failed to add dealer. Check browser console for details.");
+        setIsSubmitting(false);
+        return;
+      }
 
       setFormData({
         name: "",
@@ -113,7 +119,7 @@ export default function DealersTab({
       toast.success("Dealer added successfully");
     } catch (error) {
       console.error("Error adding dealer:", error);
-      toast.error("Failed to add dealer");
+      toast.error(`Failed to add dealer: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
