@@ -113,11 +113,13 @@ function computeSummary(rows: AttendanceEntry[], year: number, month: number): O
 
     switch (r.status) {
       case "Present":
-      case "Half Day":
         numPresents += 1;
         if (day !== null && isSunday(year, month, day)) {
           sundayBonusCount += 1;
         }
+        break;
+      case "Half Day":
+        numPresents += 0.5;
         break;
       case "Absent":
         numAbsents += 1;
