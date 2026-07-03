@@ -62,13 +62,28 @@ export interface Product {
 
 // DMS Dealers operations (new table)
 export async function fetchDMSDealers() {
-  if (!supabase) return [];
-  const { data, error } = await supabase.from("dms_dealers").select("*");
-  if (error) {
-    console.error("Error fetching DMS dealers:", error);
+  if (!supabase) {
+    console.warn("Supabase not initialized");
     return [];
   }
-  return data || [];
+
+  try {
+    console.log("Starting fetchDMSDealers...");
+    const { data, error } = await supabase
+      .from("dms_dealers")
+      .select("*");
+
+    if (error) {
+      console.error("Error fetching DMS dealers:", error.message);
+      return [];
+    }
+
+    console.log("Successfully fetched dealers:", data?.length || 0, "dealers");
+    return data || [];
+  } catch (err) {
+    console.error("Error in fetchDMSDealers:", err);
+    return [];
+  }
 }
 
 export async function addDMSDealer(dealer: Omit<DMSDealer, "id" | "created_at">) {
@@ -153,12 +168,17 @@ export async function deleteDealer(id: string) {
 // Products operations
 export async function fetchProducts() {
   if (!supabase) return [];
-  const { data, error } = await supabase.from("products").select("*");
-  if (error) {
-    console.error("Error fetching products:", error);
+  try {
+    const { data, error } = await supabase.from("products").select("*");
+    if (error) {
+      console.error("Error fetching products:", error);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error("Error in fetchProducts:", err);
     return [];
   }
-  return data || [];
 }
 
 export async function addProduct(product: Product) {
