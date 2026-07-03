@@ -64,12 +64,20 @@ export function useLiveDealerNetwork(selectedDealerId: string | null) {
   // 1. Pull the Directory of Registered Dealers
   useEffect(() => {
     async function fetchDealers() {
+      if (!supabase) {
+        console.warn('Supabase not initialized');
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from('dms_dealers')
           .select('*')
           .order('name', { ascending: true });
-        if (!error && data) setDealers(data);
+        if (error) {
+          console.error('Error fetching dealers:', error);
+        } else if (data) {
+          setDealers(data);
+        }
       } catch (err) {
         console.error('Error fetching dealers:', err);
       }
@@ -79,31 +87,37 @@ export function useLiveDealerNetwork(selectedDealerId: string | null) {
 
   // 2. Fetch Live Specific Dealer Assets & Compliance Records
   useEffect(() => {
-    if (!selectedDealerId) return;
+    if (!selectedDealerId || !supabase) return;
 
     let isMounted = true;
     async function fetchLiveDealerMetrics() {
       setLoading(true);
       try {
         // A. Live Dealer Inventory Stock
-        const { data: invData } = await supabase
+        const { data: invData, error: invError } = await supabase
           .from('dms_inventory_items')
           .select('*')
           .eq('dealer_id', selectedDealerId);
 
+        if (invError) console.error('Error fetching inventory:', invError);
+
         // B. Live Dealer Retail Sales & Items
-        const { data: salesData } = await supabase
+        const { data: salesData, error: salesError } = await supabase
           .from('dms_sales')
           .select('*')
           .eq('dealer_id', selectedDealerId)
           .order('date', { ascending: false });
 
+        if (salesError) console.error('Error fetching sales:', salesError);
+
         let completeSalesList: Sale[] = [];
         if (salesData && salesData.length > 0) {
-          const { data: items } = await supabase
+          const { data: items, error: itemsError } = await supabase
             .from('dms_sale_items')
             .select('*')
             .in('sale_id', salesData.map(s => s.id));
+
+          if (itemsError) console.error('Error fetching sale items:', itemsError);
 
           completeSalesList = salesData.map(s => ({
             ...s,
@@ -112,18 +126,22 @@ export function useLiveDealerNetwork(selectedDealerId: string | null) {
         }
 
         // C. Live Workshop Repair Service Jobs
-        const { data: serviceInvoices } = await supabase
+        const { data: serviceInvoices, error: serviceError } = await supabase
           .from('dms_service_invoices')
           .select('*')
           .eq('dealer_id', selectedDealerId)
           .order('date', { ascending: false });
 
+        if (serviceError) console.error('Error fetching services:', serviceError);
+
         let completeServicesList: ServiceInvoice[] = [];
         if (serviceInvoices && serviceInvoices.length > 0) {
-          const { data: serviceItems } = await supabase
+          const { data: serviceItems, error: serviceItemsError } = await supabase
             .from('dms_service_invoice_items')
             .select('*')
             .in('service_invoice_id', serviceInvoices.map(s => s.id));
+
+          if (serviceItemsError) console.error('Error fetching service items:', serviceItemsError);
 
           completeServicesList = serviceInvoices.map(s => ({
             ...s,

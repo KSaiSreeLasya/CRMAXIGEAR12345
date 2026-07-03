@@ -29,13 +29,20 @@ export default function Dealers() {
 
   const loadData = async () => {
     setLoading(true);
-    const [dealersData, productsData] = await Promise.all([
-      fetchDMSDealers(),
-      fetchProducts(),
-    ]);
-    setDealers(dealersData);
-    setProducts(productsData);
-    setLoading(false);
+    try {
+      const [dealersData, productsData] = await Promise.all([
+        fetchDMSDealers(),
+        fetchProducts(),
+      ]);
+      setDealers(dealersData || []);
+      setProducts(productsData || []);
+    } catch (error) {
+      console.error("Error loading dealers or products:", error);
+      setDealers([]);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addDealer = async (dealer: Omit<Dealer, "id">) => {
@@ -96,40 +103,46 @@ export default function Dealers() {
             </Button>
           </div>
 
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading data...</p>
-            </div>
-          ) : (
-            <Tabs defaultValue="audit" className="w-full">
-              <TabsList>
-                <TabsTrigger value="audit">Dealer Audit</TabsTrigger>
-                <TabsTrigger value="dealers">Manage Dealers</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="audit" className="w-full">
+            <TabsList>
+              <TabsTrigger value="audit">Dealer Audit</TabsTrigger>
+              <TabsTrigger value="dealers">Manage Dealers</TabsTrigger>
+              <TabsTrigger value="products">Products</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="audit" className="space-y-6">
-                <DealerAuditDashboard />
-              </TabsContent>
+            <TabsContent value="audit" className="space-y-6">
+              <DealerAuditDashboard />
+            </TabsContent>
 
-              <TabsContent value="dealers" className="space-y-6">
+            <TabsContent value="dealers" className="space-y-6">
+              {loading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading dealers...</p>
+                </div>
+              ) : (
                 <DealersTab
                   dealers={dealers}
                   onAddDealer={addDealer}
                   onDeleteDealer={deleteDealer}
                 />
-              </TabsContent>
+              )}
+            </TabsContent>
 
-              <TabsContent value="products" className="space-y-6">
+            <TabsContent value="products" className="space-y-6">
+              {loading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading products...</p>
+                </div>
+              ) : (
                 <ProductsTab
                   dealers={dealers}
                   products={products}
                   onAddProduct={addProduct}
                   onDeleteProduct={deleteProduct}
                 />
-              </TabsContent>
-            </Tabs>
-          )}
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </Layout>
