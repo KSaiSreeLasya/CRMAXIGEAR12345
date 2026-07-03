@@ -1,14 +1,6 @@
 import { supabase } from "./supabase";
 import { v4 as uuidv4 } from "uuid";
 
-// Helper to add timeout to async operations
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> {
-  const timeoutPromise = new Promise<T>((_, reject) =>
-    setTimeout(() => reject(new Error(`Operation timeout after ${timeoutMs}ms`)), timeoutMs)
-  );
-  return Promise.race([promise, timeoutPromise]);
-}
-
 export interface Dealer {
   id?: string;
   name: string;
@@ -77,20 +69,16 @@ export async function fetchDMSDealers() {
 
   try {
     console.log("Starting fetchDMSDealers...");
-    const { data, error } = await withTimeout(
-      supabase
-        .from("dms_dealers")
-        .select("*")
-        .order("name", { ascending: true }),
-      8000
-    );
+    const { data, error } = await supabase
+      .from("dms_dealers")
+      .select("id, name, code, email, phone, location, manager_name");
 
     if (error) {
-      console.error("Error fetching DMS dealers:", error);
+      console.error("Error fetching DMS dealers:", error.message);
       return [];
     }
 
-    console.log("Successfully fetched dealers:", data?.length || 0, "dealers", data);
+    console.log("Successfully fetched dealers:", data?.length || 0, "dealers");
     return data || [];
   } catch (err) {
     console.error("Error in fetchDMSDealers:", err);
@@ -181,10 +169,7 @@ export async function deleteDealer(id: string) {
 export async function fetchProducts() {
   if (!supabase) return [];
   try {
-    const { data, error } = await withTimeout(
-      supabase.from("products").select("*"),
-      8000
-    );
+    const { data, error } = await supabase.from("products").select("*");
     if (error) {
       console.error("Error fetching products:", error);
       return [];
