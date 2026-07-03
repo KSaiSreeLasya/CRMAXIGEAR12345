@@ -72,7 +72,7 @@ export function useLiveDealerNetwork(selectedDealerId: string | null) {
         console.log('Fetching dealers from dms_dealers table...');
         const { data, error } = await supabase
           .from('dms_dealers')
-          .select('id, name, code, email, phone, location, manager_name')
+          .select('*')
           .order('name', { ascending: true });
         if (error) {
           console.error('Error fetching dealers:', error.message, error);

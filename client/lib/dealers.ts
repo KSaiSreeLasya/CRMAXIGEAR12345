@@ -71,7 +71,7 @@ export async function fetchDMSDealers() {
     console.log("Starting fetchDMSDealers...");
     const { data, error } = await supabase
       .from("dms_dealers")
-      .select("id, name, code, email, phone, location, manager_name");
+      .select("*");
 
     if (error) {
       console.error("Error fetching DMS dealers:", error.message);
