@@ -20,8 +20,14 @@ interface InventoryItem {
   id: string;
   modelNo?: string;
   brand?: string;
+  vehicleModel?: string;
+  hsnNo?: string;
   vehicleCount?: number;
   closingStock?: number;
+  motorNo?: string;
+  batteryNo?: string;
+  batteryModel?: string;
+  chassisNos?: string[];
   partName?: string;
   price?: number;
   qty?: number;
@@ -51,17 +57,32 @@ export default function InventoryDispatch() {
         // Fetch vehicles inventory (all vehicles, not filtered by closing_stock)
         const { data: vehiclesData, error: vehiclesError } = await supabase
           .from("inventory_items")
-          .select("id, model_no, brand, vehicle_count, closing_stock");
+          .select("id, model_no, brand, vehicle_model, hsn_no, vehicle_count, closing_stock, motor_no, battery_no, battery_model, chassis_no");
 
         if (!vehiclesError && vehiclesData) {
           items.push(
-            ...vehiclesData.map((v: any) => ({
-              id: v.id,
-              modelNo: v.model_no,
-              brand: v.brand,
-              vehicleCount: v.vehicle_count,
-              closingStock: v.closing_stock,
-            }))
+            ...vehiclesData.map((v: any) => {
+              // Parse chassis numbers from comma-separated string
+              const chassisString = v.chassis_no || "";
+              const chassisNos = chassisString
+                .split(",")
+                .map((c: string) => c.trim())
+                .filter((c: string) => c.length > 0);
+
+              return {
+                id: v.id,
+                modelNo: v.model_no,
+                brand: v.brand,
+                vehicleModel: v.vehicle_model,
+                hsnNo: v.hsn_no,
+                vehicleCount: v.vehicle_count,
+                closingStock: v.closing_stock,
+                motorNo: v.motor_no,
+                batteryNo: v.battery_no,
+                batteryModel: v.battery_model,
+                chassisNos: chassisNos,
+              };
+            })
           );
         }
 
