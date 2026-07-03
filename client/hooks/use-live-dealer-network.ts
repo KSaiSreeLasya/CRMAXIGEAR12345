@@ -69,17 +69,19 @@ export function useLiveDealerNetwork(selectedDealerId: string | null) {
         return;
       }
       try {
+        console.log('Fetching dealers from dms_dealers table...');
         const { data, error } = await supabase
           .from('dms_dealers')
           .select('*')
           .order('name', { ascending: true });
         if (error) {
-          console.error('Error fetching dealers:', error);
-        } else if (data) {
-          setDealers(data);
+          console.error('Error fetching dealers:', error.message, error);
+        } else {
+          console.log('Dealers fetched successfully:', data?.length, 'dealers', data);
+          setDealers(data || []);
         }
       } catch (err) {
-        console.error('Error fetching dealers:', err);
+        console.error('Error fetching dealers (caught):', err);
       }
     }
     fetchDealers();

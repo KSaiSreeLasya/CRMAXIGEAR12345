@@ -14,6 +14,8 @@ export function DealerAuditDashboard() {
 
   const selectedDealer = dealers.find(d => d.id === selectedDealerId);
 
+  console.log('DealerAuditDashboard - dealers:', dealers, 'loading:', loading);
+
   return (
     <div className="space-y-6">
       <div>
@@ -29,18 +31,24 @@ export function DealerAuditDashboard() {
           <CardTitle>Select Dealer</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={selectedDealerId || ''} onValueChange={setSelectedDealerId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a dealer to audit..." />
-            </SelectTrigger>
-            <SelectContent>
-              {dealers.map(dealer => (
-                <SelectItem key={dealer.id} value={dealer.id}>
-                  {dealer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {dealers.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <p>No dealers found. Please add dealers first in the "Manage Dealers" tab.</p>
+            </div>
+          ) : (
+            <Select value={selectedDealerId || ''} onValueChange={setSelectedDealerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a dealer to audit..." />
+              </SelectTrigger>
+              <SelectContent>
+                {dealers.map(dealer => (
+                  <SelectItem key={dealer.id} value={dealer.id}>
+                    {dealer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </CardContent>
       </Card>
 
