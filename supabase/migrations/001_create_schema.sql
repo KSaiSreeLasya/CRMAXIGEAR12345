@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public.projects (
   amount NUMERIC NOT NULL,
   mode_of_payment TEXT DEFAULT 'Cash',
   lead_source TEXT,
+  sale_type TEXT NOT NULL DEFAULT 'regular' CHECK (sale_type IN ('regular', 'b2b')),
+  invoice_no TEXT,
   show_split_payment_details BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

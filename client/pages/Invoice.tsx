@@ -29,12 +29,12 @@ export default function Invoice() {
   }, [projectId]);
 
   useEffect(() => {
-    if (!settingsKey) return;
+    if (!settingsKey || !project) return;
     try {
       const saved = localStorage.getItem(settingsKey);
       if (!saved) {
         // First time opening this invoice - generate and immediately save the number
-        const newInvoiceNo = getNextInvoiceNumber(project?.saleType);
+        const newInvoiceNo = project.invoiceNo?.trim() || getNextInvoiceNumber(project.saleType);
         setInvoiceNo(newInvoiceNo);
         setGstType("cgst-sgst");
         setPlaceOfSupply("TG");
@@ -47,6 +47,7 @@ export default function Invoice() {
             placeOfSupply: "TG",
           }),
         );
+        void saveInvoiceNumber(newInvoiceNo);
         return;
       }
 
@@ -56,7 +57,8 @@ export default function Invoice() {
         placeOfSupply?: string;
       };
       // Load saved settings - use invoiceNo as-is (never regenerate)
-      setInvoiceNo(parsed.invoiceNo || "");
+      setInvoiceNo(parsed.invoiceNo || project.invoiceNo || "");
+      if (parsed.invoiceNo) void saveInvoiceNumber(parsed.invoiceNo);
       setGstType(parsed.gstType === "igst" || parsed.gstType === "cgst-sgst" ? parsed.gstType : "cgst-sgst");
       setPlaceOfSupply(parsed.placeOfSupply || "TG");
     } catch (error) {
@@ -127,6 +129,8 @@ export default function Invoice() {
               modeOfPayment: data.mode_of_payment || "Cash",
               leadSource: data.lead_source || "",
               gstNo: data.gst_no || "",
+              saleType: data.sale_type === "b2b" ? "b2b" : "regular",
+              invoiceNo: data.invoice_no || "",
               createdAt: new Date(data.created_at).toLocaleDateString(),
             };
             setProject(project);
@@ -220,6 +224,22 @@ export default function Invoice() {
     );
   }
 
+  const saveInvoiceNumber = async (value: string) => {
+    const trimmedValue = value.trim();
+    if (!projectId || !trimmedValue || !supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ invoice_no: trimmedValue })
+        .eq("id", projectId);
+      if (error) throw error;
+      setProject((current) => current ? { ...current, invoiceNo: trimmedValue } : current);
+    } catch (error) {
+      console.error("Error saving invoice number:", error);
+    }
+  };
+
   const handleDownloadPDF = () => {
     const element = document.getElementById("invoice-container");
     if (!element) {
@@ -303,6 +323,7 @@ export default function Invoice() {
                   type="text"
                   value={invoiceNo}
                   onChange={(e) => setInvoiceNo(e.target.value)}
+                  onBlur={() => void saveInvoiceNumber(invoiceNo)}
                   placeholder="Enter invoice number"
                   className="text-sm border border-gray-300 rounded px-3 py-2 bg-white font-medium w-full focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
