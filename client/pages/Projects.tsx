@@ -440,34 +440,43 @@ export default function Projects() {
             throw new Error("Your session has expired. Please sign in with your Supabase account and try again.");
           }
 
-          const { data, error } = await supabase
+          const projectInsert = {
+            user_id: user.id,
+            model_no: newProject.modelNo || null,
+            customer_name: newProject.customerName,
+            contact_no: newProject.contactNo,
+            location: newProject.location,
+            product_description: newProject.productDescription,
+            hsn_no: newProject.hsnNo,
+            chassis_no: newProject.chassisNo,
+            motor_no: newProject.motorNo || null,
+            battery_no: newProject.batteryNo || null,
+            battery_warranty: newProject.batteryWarranty || null,
+            battery_capacity: newProject.batteryCapacity || null,
+            vehicle_warranty: newProject.vehicleWarranty || null,
+            invoice_date: newProject.invoiceDate || null,
+            amount: newProject.amount,
+            mode_of_payment: newProject.modeOfPayment,
+            lead_source: newProject.leadSource || null,
+            gst_no: newProject.gstNo || null,
+            sale_type: newProject.saleType || "regular",
+            show_split_payment_details: newProject.showSplitPaymentDetails ?? false,
+          };
+
+          let insertResult = await supabase
             .from('projects')
-            .insert([
-              {
-                user_id: user.id,
-                model_no: newProject.modelNo || null,
-                customer_name: newProject.customerName,
-                contact_no: newProject.contactNo,
-                location: newProject.location,
-                product_description: newProject.productDescription,
-                hsn_no: newProject.hsnNo,
-                chassis_no: newProject.chassisNo,
-                motor_no: newProject.motorNo || null,
-                battery_no: newProject.batteryNo || null,
-                battery_warranty: newProject.batteryWarranty || null,
-                battery_capacity: newProject.batteryCapacity || null,
-                vehicle_warranty: newProject.vehicleWarranty || null,
-                invoice_date: newProject.invoiceDate || null,
-                amount: newProject.amount,
-                mode_of_payment: newProject.modeOfPayment,
-                lead_source: newProject.leadSource || null,
-                gst_no: newProject.gstNo || null,
-                sale_type: newProject.saleType || "regular",
-                show_split_payment_details: newProject.showSplitPaymentDetails ?? false,
-              }
-            ])
+            .insert([projectInsert])
             .select('*');
 
+          if (insertResult.error?.message?.includes("'sale_type'")) {
+            const { sale_type: _saleType, ...legacyProjectInsert } = projectInsert;
+            insertResult = await supabase
+              .from('projects')
+              .insert([legacyProjectInsert])
+              .select('*');
+          }
+
+          const { data, error } = insertResult;
           if (error) {
             console.error('Supabase insert error:', error);
             throw error;
@@ -548,32 +557,42 @@ export default function Projects() {
 
       if (supabase) {
         try {
-          const { error } = await supabase
+          const projectUpdate = {
+            customer_name: updatedData.customerName,
+            model_no: updatedData.modelNo || null,
+            contact_no: updatedData.contactNo,
+            location: updatedData.location,
+            product_description: updatedData.productDescription,
+            hsn_no: updatedData.hsnNo,
+            chassis_no: updatedData.chassisNo,
+            motor_no: updatedData.motorNo || null,
+            battery_no: updatedData.batteryNo || null,
+            battery_warranty: updatedData.batteryWarranty || null,
+            battery_capacity: updatedData.batteryCapacity || null,
+            vehicle_warranty: updatedData.vehicleWarranty || null,
+            invoice_date: updatedData.invoiceDate || null,
+            amount: updatedData.amount,
+            mode_of_payment: updatedData.modeOfPayment,
+            lead_source: updatedData.leadSource || null,
+            gst_no: updatedData.gstNo || null,
+            sale_type: updatedData.saleType || "regular",
+            show_split_payment_details: updatedData.showSplitPaymentDetails ?? false,
+          };
+
+          let updateResult = await supabase
             .from('projects')
-            .update({
-              customer_name: updatedData.customerName,
-              model_no: updatedData.modelNo || null,
-              contact_no: updatedData.contactNo,
-              location: updatedData.location,
-              product_description: updatedData.productDescription,
-              hsn_no: updatedData.hsnNo,
-              chassis_no: updatedData.chassisNo,
-              motor_no: updatedData.motorNo || null,
-              battery_no: updatedData.batteryNo || null,
-              battery_warranty: updatedData.batteryWarranty || null,
-              battery_capacity: updatedData.batteryCapacity || null,
-              vehicle_warranty: updatedData.vehicleWarranty || null,
-              invoice_date: updatedData.invoiceDate || null,
-              amount: updatedData.amount,
-              mode_of_payment: updatedData.modeOfPayment,
-              lead_source: updatedData.leadSource || null,
-              gst_no: updatedData.gstNo || null,
-              sale_type: updatedData.saleType || "regular",
-              show_split_payment_details: updatedData.showSplitPaymentDetails ?? false,
-            })
+            .update(projectUpdate)
             .eq('id', id);
 
-          if (error) throw error;
+          if (updateResult.error?.message?.includes("'sale_type'")) {
+            const { sale_type: _saleType, ...legacyProjectUpdate } = projectUpdate;
+            updateResult = await supabase
+              .from('projects')
+              .update(legacyProjectUpdate)
+              .eq('id', id);
+          }
+
+          if (updateResult.error) throw updateResult.error;
 
           // Handle split payments update
           if (updatedData.splitPayments && updatedData.splitPayments.length > 0) {
