@@ -211,7 +211,7 @@ export default function Invoice() {
     );
   }
 
-  const saveInvoiceNumber = async (value: string) => {
+  async function saveInvoiceNumber(value: string) {
     const trimmedValue = value.trim();
     if (!projectId || !trimmedValue || !supabase) return;
 
@@ -225,7 +225,7 @@ export default function Invoice() {
     } catch (error) {
       console.error("Error saving invoice number:", error);
     }
-  };
+  }
 
   const handleDownloadPDF = () => {
     const element = document.getElementById("invoice-container");
@@ -484,5 +484,5 @@ function getNextInvoiceNumber(saleType?: string): string {
   }
 
   const nextNumber = (maxNumericSuffix + 1).toString().padStart(3, "0");
-  return isB2B ? `AAV/B2B/2026-27-${nextNumber}` : `AAV/2026-27-${nextNumber}`;
+  return isB2B ? `AAV/B2B/2026-27/${nextNumber}` : `AAV/2026-27/${nextNumber}`;
 }
