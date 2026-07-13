@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS projects (
   chassis_no TEXT NOT NULL,
   amount DECIMAL(12, 2) NOT NULL,
   sale_type TEXT NOT NULL DEFAULT 'regular' CHECK (sale_type IN ('regular', 'b2b')),
+  invoice_no TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
