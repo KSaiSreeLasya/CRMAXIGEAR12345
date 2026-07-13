@@ -455,8 +455,6 @@ export default function Invoice() {
 
 function getNextInvoiceNumber(saleType?: string): string {
   const isB2B = saleType === "b2b";
-  const defaultInvoiceNo = isB2B ? "AAV/B2B/2026-27/001" : "AAV/2026-27/001";
-  let maxInvoiceNo = defaultInvoiceNo;
   let maxNumericSuffix = 0;
 
   try {
@@ -469,28 +467,22 @@ function getNextInvoiceNumber(saleType?: string): string {
       const invoice = parsed.invoiceNo?.trim();
       if (!invoice) continue;
 
-      // Filter by sale type: B2B numbers contain "/B2B/", regular ones don't
       const isB2BInvoice = invoice.includes("/B2B/");
       if (isB2BInvoice !== isB2B) continue;
 
-      const match = invoice.match(/^(.*?)(\d+)$/);
+      const match = invoice.match(/(\d+)$/);
       if (!match) continue;
-      const numericValue = Number(match[2]);
+      const numericValue = Number(match[1]);
       if (Number.isNaN(numericValue)) continue;
 
       if (numericValue > maxNumericSuffix) {
         maxNumericSuffix = numericValue;
-        maxInvoiceNo = invoice;
       }
     }
   } catch (error) {
     console.error("Error deriving next invoice number:", error);
   }
 
-  const lastMatch = maxInvoiceNo.match(/^(.*?)(\d+)$/);
-  if (!lastMatch) return defaultInvoiceNo;
-  const prefix = lastMatch[1];
-  const width = lastMatch[2].length;
-  const nextValue = String(Number(lastMatch[2]) + 1).padStart(width, "0");
-  return `${prefix}${nextValue}`;
+  const nextNumber = (maxNumericSuffix + 1).toString().padStart(3, "0");
+  return isB2B ? `AAV/B2B/2026-27-${nextNumber}` : `AAV/2026-27-${nextNumber}`;
 }
