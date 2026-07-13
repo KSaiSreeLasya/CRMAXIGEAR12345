@@ -32,74 +32,39 @@ export default function Invoice() {
     if (!settingsKey || !project) return;
     try {
       const saved = localStorage.getItem(settingsKey);
-      // Always prefer stored invoice number if it exists
+      // Check for saved GST and location settings (not invoice number anymore)
       if (saved) {
         const parsed = JSON.parse(saved) as {
           invoiceNo?: string;
           gstType?: "igst" | "cgst-sgst";
           placeOfSupply?: string;
         };
-        // Load saved settings - use invoiceNo as-is (never regenerate)
-        if (parsed.invoiceNo) {
-          setInvoiceNo(parsed.invoiceNo);
-          setGstType(parsed.gstType === "igst" || parsed.gstType === "cgst-sgst" ? parsed.gstType : "cgst-sgst");
-          setPlaceOfSupply(parsed.placeOfSupply || "TG");
-          return;
-        }
-      }
-
-      // If there's already an invoice number in the database, use it
-      if (project.invoiceNo?.trim()) {
-        setInvoiceNo(project.invoiceNo.trim());
+        setGstType(parsed.gstType === "igst" || parsed.gstType === "cgst-sgst" ? parsed.gstType : "cgst-sgst");
+        setPlaceOfSupply(parsed.placeOfSupply || "TG");
+      } else {
         setGstType("cgst-sgst");
         setPlaceOfSupply("TG");
-        try {
-          localStorage.setItem(
-            settingsKey,
-            JSON.stringify({
-              invoiceNo: project.invoiceNo.trim(),
-              gstType: "cgst-sgst",
-              placeOfSupply: "TG",
-            }),
-          );
-        } catch (saveError) {
-          console.error("Error saving invoice settings:", saveError);
-        }
-        return;
       }
 
-      // First time opening this invoice - generate new number based on actual saleType
-      const newInvoiceNo = getNextInvoiceNumber(project.saleType);
-      setInvoiceNo(newInvoiceNo);
-      setGstType("cgst-sgst");
-      setPlaceOfSupply("TG");
-      // Save immediately so number is never regenerated
-      localStorage.setItem(
-        settingsKey,
-        JSON.stringify({
-          invoiceNo: newInvoiceNo,
-          gstType: "cgst-sgst",
-          placeOfSupply: "TG",
-        }),
-      );
-      void saveInvoiceNumber(newInvoiceNo);
+      // Use invoice number from project (saved in database)
+      if (project.invoiceNo?.trim()) {
+        setInvoiceNo(project.invoiceNo.trim());
+      } else {
+        // Fallback to auto-generate if somehow empty
+        const newInvoiceNo = getNextInvoiceNumber(project.saleType);
+        setInvoiceNo(newInvoiceNo);
+        void saveInvoiceNumber(newInvoiceNo);
+      }
     } catch (error) {
-      console.error("Error loading saved invoice settings:", error);
-      const newInvoiceNo = getNextInvoiceNumber(project.saleType);
-      setInvoiceNo(newInvoiceNo);
+      console.error("Error loading invoice settings:", error);
       setGstType("cgst-sgst");
       setPlaceOfSupply("TG");
-      try {
-        localStorage.setItem(
-          settingsKey,
-          JSON.stringify({
-            invoiceNo: newInvoiceNo,
-            gstType: "cgst-sgst",
-            placeOfSupply: "TG",
-          }),
-        );
-      } catch (saveError) {
-        console.error("Error saving initial invoice settings:", saveError);
+      if (project.invoiceNo?.trim()) {
+        setInvoiceNo(project.invoiceNo.trim());
+      } else {
+        const newInvoiceNo = getNextInvoiceNumber(project.saleType);
+        setInvoiceNo(newInvoiceNo);
+        void saveInvoiceNumber(newInvoiceNo);
       }
     }
   }, [settingsKey, project]);
