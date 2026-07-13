@@ -52,8 +52,21 @@ export default function CreateProjectModal({
       setModelLookupMessage("");
       setAvailableChassisNumbers([]);
       setShowChassisDropdown(false);
+      void updateInvoiceNumber(formData.saleType);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      void updateInvoiceNumber(formData.saleType);
+    }
+  }, [formData.saleType]);
+
+  const updateInvoiceNumber = async (saleType: string) => {
+    setFormData((prev) => ({ ...prev, invoiceNo: "" }));
+    const invoiceNo = await getNextInvoiceNumber(saleType);
+    setFormData((prev) => ({ ...prev, invoiceNo }));
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -111,7 +124,7 @@ export default function CreateProjectModal({
       return;
     }
 
-    const invoiceNo = formData.invoiceNo.trim() || getNextInvoiceNumber(formData.saleType);
+    const invoiceNo = formData.invoiceNo.trim() || await getNextInvoiceNumber(formData.saleType);
     await onCreateProject({
       modelNo: formData.modelNo,
       customerName: formData.customerName,
@@ -623,7 +636,7 @@ export default function CreateProjectModal({
                 name="invoiceNo"
                 value={formData.invoiceNo}
                 onChange={handleChange}
-                placeholder={formData.saleType === "b2b" ? "e.g. AAV/B2B/2026-27-001" : "e.g. AAV/2026-27-001"}
+                placeholder={formData.saleType === "b2b" ? "e.g. AAV/B2B/2026-27/001" : "e.g. AAV/2026-27/001"}
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate based on sale type</p>
@@ -677,10 +690,26 @@ export default function CreateProjectModal({
   );
 }
 
-function getNextInvoiceNumber(saleType: string): string {
+async function getNextInvoiceNumber(saleType: string): Promise<string> {
   const isB2B = saleType === "b2b";
-  const defaultInvoiceNo = isB2B ? "AAV/B2B/2026-27-001" : "AAV/2026-27-001";
+  const invoicePrefix = isB2B ? "AAV/B2B/2026-27/" : "AAV/2026-27/";
   let maxNumericSuffix = 0;
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("invoice_no, sale_type")
+      .eq("sale_type", saleType);
+
+    if (!error) {
+      for (const row of data ?? []) {
+        const match = row.invoice_no?.trim().match(new RegExp(`^${invoicePrefix}(\\d+)$`));
+        if (match) {
+          maxNumericSuffix = Math.max(maxNumericSuffix, Number(match[1]));
+        }
+      }
+    }
+  }
 
   try {
     for (let i = 0; i < localStorage.length; i += 1) {
@@ -689,25 +718,14 @@ function getNextInvoiceNumber(saleType: string): string {
       const raw = localStorage.getItem(key);
       if (!raw) continue;
       const parsed = JSON.parse(raw) as { invoiceNo?: string };
-      const invoice = parsed.invoiceNo?.trim();
-      if (!invoice) continue;
-
-      const isB2BInvoice = invoice.includes("/B2B/");
-      if (isB2BInvoice !== isB2B) continue;
-
-      const match = invoice.match(/(\d+)$/);
-      if (!match) continue;
-      const numericValue = Number(match[1]);
-      if (Number.isNaN(numericValue)) continue;
-
-      if (numericValue > maxNumericSuffix) {
-        maxNumericSuffix = numericValue;
+      const match = parsed.invoiceNo?.trim().match(new RegExp(`^${invoicePrefix}(\\d+)$`));
+      if (match) {
+        maxNumericSuffix = Math.max(maxNumericSuffix, Number(match[1]));
       }
     }
   } catch (error) {
     console.error("Error deriving next invoice number:", error);
   }
 
-  const nextNumber = (maxNumericSuffix + 1).toString().padStart(3, "0");
-  return isB2B ? `AAV/B2B/2026-27-${nextNumber}` : `AAV/2026-27-${nextNumber}`;
+  return `${invoicePrefix}${(maxNumericSuffix + 1).toString().padStart(3, "0")}`;
 }

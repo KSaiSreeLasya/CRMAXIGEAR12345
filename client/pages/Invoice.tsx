@@ -484,5 +484,5 @@ function getNextInvoiceNumber(saleType?: string): string {
   }
 
   const nextNumber = (maxNumericSuffix + 1).toString().padStart(3, "0");
-  return isB2B ? `AAV/B2B/2026-27-${nextNumber}` : `AAV/2026-27-${nextNumber}`;
+  return isB2B ? `AAV/B2B/2026-27/${nextNumber}` : `AAV/2026-27/${nextNumber}`;
 }
