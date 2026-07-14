@@ -241,7 +241,8 @@ const loadInvoices = async () => {
 
   try {
     if (!supabase) {
-      console.error("Supabase client not initialized");
+      const saved = localStorage.getItem("crm_dealer_invoices");
+      setInvoices(saved ? JSON.parse(saved) : []);
       return;
     }
 
@@ -304,6 +305,8 @@ const loadInvoices = async () => {
     setInvoices(mappedInvoices);
   } catch (error) {
     console.error("Load Invoice Error:", error);
+    const saved = localStorage.getItem("crm_dealer_invoices");
+    setInvoices(saved ? JSON.parse(saved) : []);
   } finally {
     setIsLoading(false);
   }
@@ -606,6 +609,9 @@ const loadSparesInvoices = async () => {
     try {
       if (supabase) {
         try {
+          // Delete invoice items first
+          await supabase.from("dealers_invoice_items").delete().eq("invoice_id", id);
+          // Then delete the invoice
           await supabase.from("dealers_invoices").delete().eq("id", id);
         } catch (error) {
           console.warn("Supabase delete failed, using localStorage");
@@ -855,6 +861,9 @@ const loadSparesInvoices = async () => {
     try {
       if (supabase) {
         try {
+          // Delete spares invoice items first
+          await supabase.from("spares_invoice_products").delete().eq("spares_invoice_id", id);
+          // Then delete the spares invoice
           await supabase.from("spares_invoices").delete().eq("id", id);
         } catch (error) {
           console.warn("Supabase delete failed, using localStorage");
