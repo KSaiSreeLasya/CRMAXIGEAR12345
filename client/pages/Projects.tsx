@@ -143,6 +143,7 @@ export default function Projects() {
             batteryCapacity: project.battery_capacity || "",
             vehicleWarranty: project.vehicle_warranty || "",
             invoiceDate: project.invoice_date || "",
+            deliveryDate: project.delivery_date || "",
             amount: project.amount,
             modeOfPayment: project.mode_of_payment || "Cash",
             leadSource: project.lead_source || "",
@@ -516,24 +517,6 @@ export default function Projects() {
             showSplitPaymentDetails: data[0].show_split_payment_details ?? false,
             createdAt: new Date(data[0].created_at).toLocaleDateString(),
           };
-
-          // Create delivery record linked to this sale
-          if (newProject.deliveryDate) {
-            try {
-              await supabase
-                .from('deliveries')
-                .insert([{
-                  project_id: data[0].id,
-                  project_name: newProject.customerName,
-                  deliverables: newProject.productDescription,
-                  delivery_date: newProject.deliveryDate,
-                  status: 'pending',
-                  user_id: user.id,
-                }]);
-            } catch (deliveryError: any) {
-              console.warn("Warning: Could not create delivery record:", deliveryError?.message);
-            }
-          }
 
           // Create transaction with split payments
           if (splitPayments && splitPayments.length > 0) {
