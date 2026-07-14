@@ -958,7 +958,7 @@ export default function Inventory() {
               ) : items.length === 0 ? (
                 <p className="text-muted-foreground">No inventory rows yet.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="inventory-table-scroll overflow-x-scroll pb-2">
                   <table className="inventory-table w-full min-w-[1600px] text-sm">
                     <thead>
                       <tr className="border-b border-border">
