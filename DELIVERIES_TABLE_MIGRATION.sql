@@ -1,55 +1,88 @@
--- Create deliveries table linked to sales (projects)
-CREATE TABLE IF NOT EXISTS deliveries (
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+ALTER TABLE public.projects
+  ADD COLUMN IF NOT EXISTS delivery_date DATE;
+
+CREATE TABLE IF NOT EXISTS public.deliveries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  project_name VARCHAR NOT NULL, -- Customer name from sales
-  deliverables TEXT NOT NULL, -- Product description from sales
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
+  project_name TEXT NOT NULL,
+  deliverables TEXT NOT NULL,
   delivery_date DATE NOT NULL,
-  status VARCHAR DEFAULT 'pending', -- pending, completed, cancelled
+  status TEXT NOT NULL DEFAULT 'pending',
   user_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create index for faster queries on delivery_date
-CREATE INDEX IF NOT EXISTS idx_deliveries_delivery_date ON deliveries(delivery_date);
-CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status);
-CREATE INDEX IF NOT EXISTS idx_deliveries_project_id ON deliveries(project_id);
+ALTER TABLE public.deliveries
+  ADD COLUMN IF NOT EXISTS project_id UUID,
+  ADD COLUMN IF NOT EXISTS user_id UUID;
 
--- Add delivery_date column to projects table if not exists
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS delivery_date DATE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'deliveries_project_id_fkey'
+      AND conrelid = 'public.deliveries'::regclass
+  ) THEN
+    ALTER TABLE public.deliveries
+      ADD CONSTRAINT deliveries_project_id_fkey
+      FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+  END IF;
+END;
+$$;
 
--- Create a view for upcoming deliveries (next 7 days)
-DROP VIEW IF EXISTS upcoming_deliveries_7_days;
-CREATE VIEW upcoming_deliveries_7_days AS
-SELECT 
+CREATE INDEX IF NOT EXISTS idx_deliveries_delivery_date
+  ON public.deliveries(delivery_date);
+CREATE INDEX IF NOT EXISTS idx_deliveries_status
+  ON public.deliveries(status);
+CREATE INDEX IF NOT EXISTS idx_deliveries_project_id
+  ON public.deliveries(project_id);
+
+CREATE OR REPLACE FUNCTION public.create_delivery_for_project()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.delivery_date IS NOT NULL THEN
+    INSERT INTO public.deliveries (
+      project_id,
+      project_name,
+      deliverables,
+      delivery_date,
+      status,
+      user_id
+    ) VALUES (
+      NEW.id,
+      NEW.customer_name,
+      NEW.product_description,
+      NEW.delivery_date,
+      'pending',
+      NEW.user_id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS create_delivery_after_project_insert ON public.projects;
+CREATE TRIGGER create_delivery_after_project_insert
+  AFTER INSERT ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION public.create_delivery_for_project();
+
+DROP VIEW IF EXISTS public.upcoming_deliveries_7_days;
+CREATE VIEW public.upcoming_deliveries_7_days AS
+SELECT
   d.*,
   p.customer_name,
   p.contact_no,
   p.location,
   p.amount
-FROM deliveries d
-JOIN projects p ON d.project_id = p.id
-WHERE d.status = 'pending' 
-  AND d.delivery_date >= CURRENT_DATE 
-  AND d.delivery_date <= CURRENT_DATE + INTERVAL '7 days'
+FROM public.deliveries d
+JOIN public.projects p ON p.id = d.project_id
+WHERE d.status = 'pending'
+  AND d.delivery_date >= CURRENT_DATE
+  AND d.delivery_date <= CURRENT_DATE + 7
 ORDER BY d.delivery_date ASC;
-
--- Optional: Add RLS policies if using authentication
-ALTER TABLE deliveries ENABLE ROW LEVEL SECURITY;
-
--- Create a policy for viewing deliveries (if using Supabase Auth)
--- DROP POLICY IF EXISTS "enable_read_deliveries" ON deliveries;
--- CREATE POLICY "enable_read_deliveries" ON deliveries
---   FOR SELECT
---   USING (auth.role() = 'authenticated');
-
--- DROP POLICY IF EXISTS "enable_write_deliveries" ON deliveries;
--- CREATE POLICY "enable_write_deliveries" ON deliveries
---   FOR INSERT
---   WITH CHECK (auth.role() = 'authenticated');
-
--- DROP POLICY IF EXISTS "enable_update_deliveries" ON deliveries;
--- CREATE POLICY "enable_update_deliveries" ON deliveries
---   FOR UPDATE
---   USING (auth.role() = 'authenticated');
