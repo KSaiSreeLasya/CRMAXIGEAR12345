@@ -188,7 +188,7 @@ export default function EditProjectModal({
         const { data, error } = await supabase
           .from("inventory_items")
           .select("chassis_no")
-          .ilike("brand", `%${modelInput}%`);
+          .ilike("vehicle_model", `%${modelInput}%`);
         if (error) throw error;
         const uniqueChassis = new Set<string>();
         data?.forEach((row: any) => {
@@ -205,7 +205,7 @@ export default function EditProjectModal({
         const uniqueChassis = new Set<string>();
         list.forEach((row: any) => {
           if (
-            (row.brand || "").toLowerCase().includes(modelInput.toLowerCase()) &&
+            (row.vehicleModel || "").toLowerCase().includes(modelInput.toLowerCase()) &&
             row.chassisNo
           ) {
             // Split comma-separated chassis numbers into individual items
@@ -217,7 +217,7 @@ export default function EditProjectModal({
       }
 
       if (chassisNumbers.length === 0) {
-        setModelLookupMessage("No chassis numbers found for this brand in inventory.");
+        setModelLookupMessage("No chassis numbers found for this vehicle model in inventory.");
         setAvailableChassisNumbers([]);
         setShowChassisDropdown(false);
         return;
@@ -225,9 +225,9 @@ export default function EditProjectModal({
 
       setAvailableChassisNumbers(chassisNumbers);
       setShowChassisDropdown(true);
-      setModelLookupMessage(`Found ${chassisNumbers.length} chassis number(s) for this brand. Please select one.`);
+      setModelLookupMessage(`Found ${chassisNumbers.length} chassis number(s) for this vehicle model. Please select one.`);
     } catch (error) {
-      console.error("Error fetching brand details from inventory:", error);
+      console.error("Error fetching vehicle model details from inventory:", error);
       setModelLookupMessage("Failed to fetch chassis numbers.");
       setAvailableChassisNumbers([]);
       setShowChassisDropdown(false);
@@ -436,20 +436,18 @@ export default function EditProjectModal({
               )}
             </div>
 
-            {/* Chassis No */}
+            {/* Chassis No - Read Only (Auto-populated from Vehicle Model selection) */}
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Chassis No.
+                Chassis No. <span className="text-xs text-muted-foreground">(auto-populated)</span>
               </label>
               <input
                 type="text"
                 name="chassisNo"
                 value={formData.chassisNo}
-                onChange={handleChange}
-                placeholder="Enter chassis number"
-                className={`w-full px-4 py-2 border rounded-lg bg-background transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.chassisNo ? "border-destructive" : "border-border"
-                }`}
+                readOnly
+                placeholder="Select a vehicle model above to populate"
+                className="w-full px-4 py-2 border rounded-lg bg-muted text-muted-foreground cursor-not-allowed focus:outline-none border-border"
               />
               {errors.chassisNo && (
                 <p className="text-sm text-destructive mt-1">{errors.chassisNo}</p>
