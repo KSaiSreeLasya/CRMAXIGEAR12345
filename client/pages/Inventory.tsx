@@ -13,7 +13,7 @@ import { BrandManagement } from "@/components/inventory/BrandManagement";
 import { InventoryItem } from "@/types/inventory";
 
 interface ChassisInputState {
-  inputs: string[];
+  inputs: Array<{ chassis: string; color: string }>;
 }
 
 interface SpareItem {
@@ -69,7 +69,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [form, setForm] = useState(DEFAULT_FORM);
-  const [chassisInputs, setChassisInputs] = useState<ChassisInputState>({ inputs: [""] });
+  const [chassisInputs, setChassisInputs] = useState<ChassisInputState>({ inputs: [{ chassis: "", color: "" }] });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -286,11 +286,10 @@ export default function Inventory() {
       const salesCount = Number(form.salesCount || 0);
       const closingStock = vehicleCount - salesCount;
 
-      // Build chassis string from individual inputs
-      const chassisString = chassisInputs.inputs
-        .map((c) => c.trim())
-        .filter((c) => c)
-        .join(", ");
+      // Build chassis and color strings from individual inputs
+      const validEntries = chassisInputs.inputs.filter((item) => item.chassis.trim());
+      const chassisString = validEntries.map((item) => item.chassis.trim()).join(", ");
+      const colorString = validEntries.map((item) => item.color.trim()).join(", ");
 
       const payload = {
         slNo: Number(form.slNo || 0),
@@ -303,6 +302,7 @@ export default function Inventory() {
         transportationPrice: Number(form.transportationPrice || 0),
         costPrice: Number(form.lotPrice || 0) + Number(form.transportationPrice || 0),
         chassisNo: chassisString,
+        colors: colorString,
         motorNo: form.motorNo.trim(),
         batteryNo: form.batteryNo.trim(),
         manufacturerInvNo: form.manufacturerInvNo.trim(),
@@ -326,6 +326,7 @@ export default function Inventory() {
               lot_price: payload.lotPrice,
               transportation_price: payload.transportationPrice,
               chassis_no: payload.chassisNo || null,
+              colors: payload.colors || null,
               motor_no: payload.motorNo || null,
               battery_no: payload.batteryNo || null,
               manufacturer_inv_no: payload.manufacturerInvNo || null,
@@ -376,6 +377,7 @@ export default function Inventory() {
               lot_price: payload.lotPrice,
               transportation_price: payload.transportationPrice,
               chassis_no: payload.chassisNo || null,
+              colors: payload.colors || null,
                   motor_no: payload.motorNo || null,
                   battery_no: payload.batteryNo || null,
                   manufacturer_inv_no: payload.manufacturerInvNo || null,
@@ -476,11 +478,20 @@ export default function Inventory() {
       batteryCount: String(item.batteryCount),
       salesCount: String(item.salesCount),
     });
-    // Parse existing current chassis numbers into inputs array (not including sold/previous)
-    const chassis = item.chassisNo
+    // Parse existing current chassis numbers and colors into inputs array
+    const chassisArray = item.chassisNo
       ? item.chassisNo.split(",").map((c) => c.trim()).filter((c) => c)
-      : [""];
-    setChassisInputs({ inputs: chassis.length > 0 ? chassis : [""] });
+      : [];
+    const colorsArray = item.colors
+      ? item.colors.split(",").map((c) => c.trim())
+      : [];
+
+    const chassisWithColors = chassisArray.map((chassis, index) => ({
+      chassis,
+      color: colorsArray[index] || "",
+    }));
+
+    setChassisInputs({ inputs: chassisWithColors.length > 0 ? chassisWithColors : [{ chassis: "", color: "" }] });
     // Set available models for the selected brand when editing
     const selected = brands.find((b) => b.name === item.brand);
     setAvailableModels(selected?.models || []);
