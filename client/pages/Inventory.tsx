@@ -8,12 +8,12 @@ import { supabase } from "@/lib/supabase";
 import { getCurrentUser, getEmployeeSession } from "@/lib/auth";
 import { SpareImportExport } from "@/components/SpareImportExport";
 import { ImportExport } from "@/components/ImportExport";
-import { IncomingDealerShipments } from "@/components/inventory/IncomingDealerShipments";
 import { InventoryRowDetails } from "@/components/inventory/InventoryRowDetails";
+import { BrandManagement } from "@/components/inventory/BrandManagement";
 import { InventoryItem } from "@/types/inventory";
 
 interface ChassisInputState {
-  inputs: string[];
+  inputs: Array<{ chassis: string; color: string }>;
 }
 
 interface SpareItem {
@@ -22,6 +22,20 @@ interface SpareItem {
   price: number;
   qty: number;
   total: number;
+  createdAt: string;
+}
+
+interface BrandModel {
+  id: string;
+  modelName: string;
+  hsnCode: string;
+  description: string;
+}
+
+interface Brand {
+  id: string;
+  name: string;
+  models: BrandModel[];
   createdAt: string;
 }
 
@@ -55,7 +69,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [form, setForm] = useState(DEFAULT_FORM);
-  const [chassisInputs, setChassisInputs] = useState<ChassisInputState>({ inputs: [""] });
+  const [chassisInputs, setChassisInputs] = useState<ChassisInputState>({ inputs: [{ chassis: "", color: "" }] });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,12 +82,17 @@ export default function Inventory() {
   const [isLoadingSpares, setIsLoadingSpares] = useState(false);
   const [isSavingSpare, setIsSavingSpare] = useState(false);
 
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+  const [availableModels, setAvailableModels] = useState<BrandModel[]>([]);
+
   const employeeSession = getEmployeeSession();
   const [canManageCosts, setCanManageCosts] = useState(false);
 
   useEffect(() => {
     void loadInventory();
     void loadSpares();
+    void loadBrands();
     void (async () => {
       const employeeEmail = employeeSession?.email ?? localStorage.getItem("offline_user_email");
       if (employeeEmail?.toLowerCase() === "admin@axigear.in") {
@@ -204,6 +223,56 @@ export default function Inventory() {
     }
   };
 
+  const loadBrands = async () => {
+    setIsLoadingBrands(true);
+    try {
+      if (supabase) {
+        try {
+          const { data, error } = await supabase
+            .from("brands")
+            .select("*")
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+
+          const { data: modelsData, error: modelsError } = await supabase
+            .from("brand_models")
+            .select("*");
+          if (modelsError) throw modelsError;
+
+          const rows: Brand[] =
+            data?.map((row: any) => ({
+              id: row.id,
+              name: row.name || "",
+              models: modelsData
+                ?.filter((m: any) => m.brand_id === row.id)
+                .map((m: any) => ({
+                  id: m.id,
+                  modelName: m.model_name || "",
+                  hsnCode: m.hsn_code || "",
+                  description: m.description || "",
+                })) || [],
+              createdAt: new Date(row.created_at).toLocaleDateString(),
+            })) || [];
+          setBrands(rows);
+          return;
+        } catch (supabaseError: any) {
+          console.warn("Supabase brands load failed, falling back to localStorage:", supabaseError?.message);
+        }
+      }
+      const raw = localStorage.getItem("crm_brands");
+      if (raw) setBrands(JSON.parse(raw));
+    } catch (error) {
+      console.error("Error loading brands:", error);
+    } finally {
+      setIsLoadingBrands(false);
+    }
+  };
+
+  const handleBrandChange = (brandName: string) => {
+    setForm((prev) => ({ ...prev, brand: brandName, vehicleModel: "" }));
+    const selected = brands.find((b) => b.name === brandName);
+    setAvailableModels(selected?.models || []);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,11 +286,10 @@ export default function Inventory() {
       const salesCount = Number(form.salesCount || 0);
       const closingStock = vehicleCount - salesCount;
 
-      // Build chassis string from individual inputs
-      const chassisString = chassisInputs.inputs
-        .map((c) => c.trim())
-        .filter((c) => c)
-        .join(", ");
+      // Build chassis and color strings from individual inputs
+      const validEntries = chassisInputs.inputs.filter((item) => item.chassis.trim());
+      const chassisString = validEntries.map((item) => item.chassis.trim()).join(", ");
+      const colorString = validEntries.map((item) => item.color.trim()).join(", ");
 
       const payload = {
         slNo: Number(form.slNo || 0),
@@ -234,6 +302,7 @@ export default function Inventory() {
         transportationPrice: Number(form.transportationPrice || 0),
         costPrice: Number(form.lotPrice || 0) + Number(form.transportationPrice || 0),
         chassisNo: chassisString,
+        colors: colorString,
         motorNo: form.motorNo.trim(),
         batteryNo: form.batteryNo.trim(),
         manufacturerInvNo: form.manufacturerInvNo.trim(),
@@ -257,6 +326,7 @@ export default function Inventory() {
               lot_price: payload.lotPrice,
               transportation_price: payload.transportationPrice,
               chassis_no: payload.chassisNo || null,
+              colors: payload.colors || null,
               motor_no: payload.motorNo || null,
               battery_no: payload.batteryNo || null,
               manufacturer_inv_no: payload.manufacturerInvNo || null,
@@ -307,6 +377,7 @@ export default function Inventory() {
               lot_price: payload.lotPrice,
               transportation_price: payload.transportationPrice,
               chassis_no: payload.chassisNo || null,
+              colors: payload.colors || null,
                   motor_no: payload.motorNo || null,
                   battery_no: payload.batteryNo || null,
                   manufacturer_inv_no: payload.manufacturerInvNo || null,
@@ -407,11 +478,23 @@ export default function Inventory() {
       batteryCount: String(item.batteryCount),
       salesCount: String(item.salesCount),
     });
-    // Parse existing current chassis numbers into inputs array (not including sold/previous)
-    const chassis = item.chassisNo
+    // Parse existing current chassis numbers and colors into inputs array
+    const chassisArray = item.chassisNo
       ? item.chassisNo.split(",").map((c) => c.trim()).filter((c) => c)
-      : [""];
-    setChassisInputs({ inputs: chassis.length > 0 ? chassis : [""] });
+      : [];
+    const colorsArray = item.colors
+      ? item.colors.split(",").map((c) => c.trim())
+      : [];
+
+    const chassisWithColors = chassisArray.map((chassis, index) => ({
+      chassis,
+      color: colorsArray[index] || "",
+    }));
+
+    setChassisInputs({ inputs: chassisWithColors.length > 0 ? chassisWithColors : [{ chassis: "", color: "" }] });
+    // Set available models for the selected brand when editing
+    const selected = brands.find((b) => b.name === item.brand);
+    setAvailableModels(selected?.models || []);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -854,7 +937,7 @@ export default function Inventory() {
           <TabsList className="grid w-full grid-cols-3 bg-muted p-1 rounded-lg">
             <TabsTrigger value="vehicles" className="data-[state=active]:bg-background">Sales Vehicles Inventory</TabsTrigger>
             <TabsTrigger value="spares" className="data-[state=active]:bg-background">Spares Inventory</TabsTrigger>
-            <TabsTrigger value="incoming" className="data-[state=active]:bg-background">Incoming Shipments</TabsTrigger>
+            <TabsTrigger value="brands" className="data-[state=active]:bg-background">Brands</TabsTrigger>
           </TabsList>
 
           {/* Sales Vehicles Inventory Tab */}
@@ -878,8 +961,22 @@ export default function Inventory() {
               {canManageCosts ? <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Sl.No" value={form.slNo} onChange={(e) => setForm((prev) => ({ ...prev, slNo: e.target.value }))} required />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Model No" value={form.modelNo} onChange={(e) => setForm((prev) => ({ ...prev, modelNo: e.target.value }))} />
-                <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Brand" value={form.brand} onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))} />
-                <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="Vehicle Model" value={form.vehicleModel} onChange={(e) => setForm((prev) => ({ ...prev, vehicleModel: e.target.value }))} />
+                <select className="px-4 py-2 border border-border rounded-lg bg-background" value={form.brand} onChange={(e) => handleBrandChange(e.target.value)} required>
+                  <option value="">Select Brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.name}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+                <select className="px-4 py-2 border border-border rounded-lg bg-background" value={form.vehicleModel} onChange={(e) => setForm((prev) => ({ ...prev, vehicleModel: e.target.value }))} disabled={!form.brand || availableModels.length === 0}>
+                  <option value="">{form.brand ? "Select Model" : "Select Brand First"}</option>
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.modelName}>
+                      {model.modelName}
+                    </option>
+                  ))}
+                </select>
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" placeholder="HSN No" value={form.hsnNo} onChange={(e) => setForm((prev) => ({ ...prev, hsnNo: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" type="number" placeholder="Vehicle Count" value={form.vehicleCount} onChange={(e) => setForm((prev) => ({ ...prev, vehicleCount: e.target.value }))} />
                 <input className="px-4 py-2 border border-border rounded-lg bg-background" type="number" min="0" step="0.01" placeholder="Lot Price (per unit)" value={form.lotPrice} onChange={(e) => setForm((prev) => ({ ...prev, lotPrice: e.target.value }))} required />
@@ -1204,9 +1301,9 @@ export default function Inventory() {
             </div>
           </TabsContent>
 
-          {/* Incoming Dealer Shipments Tab */}
-          <TabsContent value="incoming" className="space-y-6">
-            <IncomingDealerShipments />
+          {/* Brands Tab */}
+          <TabsContent value="brands" className="space-y-6">
+            <BrandManagement />
           </TabsContent>
 
         </Tabs>
