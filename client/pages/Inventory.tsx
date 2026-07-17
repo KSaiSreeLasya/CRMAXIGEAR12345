@@ -10,6 +10,7 @@ import { SpareImportExport } from "@/components/SpareImportExport";
 import { ImportExport } from "@/components/ImportExport";
 import { IncomingDealerShipments } from "@/components/inventory/IncomingDealerShipments";
 import { InventoryRowDetails } from "@/components/inventory/InventoryRowDetails";
+import { BrandManagement } from "@/components/inventory/BrandManagement";
 import { InventoryItem } from "@/types/inventory";
 
 interface ChassisInputState {
@@ -851,10 +852,11 @@ export default function Inventory() {
         </div>
 
         <Tabs defaultValue="vehicles" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-muted p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-4 bg-muted p-1 rounded-lg">
             <TabsTrigger value="vehicles" className="data-[state=active]:bg-background">Sales Vehicles Inventory</TabsTrigger>
             <TabsTrigger value="spares" className="data-[state=active]:bg-background">Spares Inventory</TabsTrigger>
             <TabsTrigger value="incoming" className="data-[state=active]:bg-background">Incoming Shipments</TabsTrigger>
+            <TabsTrigger value="brands" className="data-[state=active]:bg-background">Brands</TabsTrigger>
           </TabsList>
 
           {/* Sales Vehicles Inventory Tab */}
@@ -1207,6 +1209,11 @@ export default function Inventory() {
           {/* Incoming Dealer Shipments Tab */}
           <TabsContent value="incoming" className="space-y-6">
             <IncomingDealerShipments />
+          </TabsContent>
+
+          {/* Brands Tab */}
+          <TabsContent value="brands" className="space-y-6">
+            <BrandManagement />
           </TabsContent>
 
         </Tabs>
