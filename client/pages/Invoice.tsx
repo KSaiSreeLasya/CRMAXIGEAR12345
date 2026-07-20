@@ -1,6 +1,6 @@
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Edit2 } from "lucide-react";
+import { ArrowLeft, Download, Edit2, MessageCircle } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import InvoiceContent from "@/components/InvoiceContent";
@@ -124,6 +124,9 @@ export default function Invoice() {
               createdAt: new Date(data.created_at).toLocaleDateString(),
             };
             setProject(project);
+            if (project.invoiceNo) {
+              recordLatestInvoiceNotification(project, project.invoiceNo);
+            }
 
             // Load split payments
             try {
@@ -166,14 +169,18 @@ export default function Invoice() {
         const projects = JSON.parse(savedProjects) as Project[];
         const foundProject = projects.find((p) => p.id === projectId);
         if (foundProject) {
-          setProject({
+          const loadedProject = {
             ...foundProject,
             batteryWarranty: foundProject.batteryWarranty ?? "",
             batteryCapacity: foundProject.batteryCapacity ?? "",
             vehicleWarranty: foundProject.vehicleWarranty ?? "",
             modeOfPayment: foundProject.modeOfPayment ?? "Cash",
             leadSource: foundProject.leadSource ?? "",
-          });
+          };
+          setProject(loadedProject);
+          if (loadedProject.invoiceNo) {
+            recordLatestInvoiceNotification(loadedProject, loadedProject.invoiceNo);
+          }
           if (foundProject.splitPayments) {
             setSplitPayments(foundProject.splitPayments);
           }
@@ -214,9 +221,38 @@ export default function Invoice() {
     );
   }
 
+  const recordLatestInvoiceNotification = (invoice: Project, number: string) => {
+    if (!projectId || !number.trim()) return;
+    localStorage.setItem(
+      "crm_latest_invoice_notification",
+      JSON.stringify({
+        projectId,
+        invoiceNo: number.trim(),
+        customerName: invoice.customerName,
+        contactNo: invoice.contactNo,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+  };
+
   async function saveInvoiceNumber(value: string) {
     const trimmedValue = value.trim();
-    if (!projectId || !trimmedValue || !supabase) return;
+    if (!projectId || !trimmedValue) return;
+
+    if (!supabase) {
+      setProject((current) => {
+        if (!current) return current;
+        const updated = { ...current, invoiceNo: trimmedValue };
+        const savedProjects = JSON.parse(localStorage.getItem("crm_projects") ?? "[]") as Project[];
+        localStorage.setItem(
+          "crm_projects",
+          JSON.stringify(savedProjects.map((item) => item.id === projectId ? updated : item)),
+        );
+        recordLatestInvoiceNotification(updated, trimmedValue);
+        return updated;
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -224,11 +260,34 @@ export default function Invoice() {
         .update({ invoice_no: trimmedValue })
         .eq("id", projectId);
       if (error) throw error;
-      setProject((current) => current ? { ...current, invoiceNo: trimmedValue } : current);
+      setProject((current) => {
+        if (!current) return current;
+        const updated = { ...current, invoiceNo: trimmedValue };
+        recordLatestInvoiceNotification(updated, trimmedValue);
+        return updated;
+      });
     } catch (error) {
       console.error("Error saving invoice number:", error);
     }
   }
+
+  const handleSendWhatsApp = () => {
+    const digits = project.contactNo.replace(/\D/g, "");
+    const whatsappNumber = digits.length === 10 ? `91${digits}` : digits;
+    if (whatsappNumber.length < 10) {
+      alert("A valid customer contact number is required to send the invoice.");
+      return;
+    }
+
+    const message = [
+      `Hello ${project.customerName},`,
+      `Your invoice ${invoiceNo} from AXIGEAR ELECTRIC LOUNGE is ready.`,
+      `Product: ${project.productDescription}`,
+      `Amount: ₹${project.amount.toLocaleString("en-IN")}`,
+      "Please contact us if you need any assistance.",
+    ].join("\\n");
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  };
 
   const handleDownloadPDF = () => {
     const element = document.getElementById("invoice-container");
@@ -291,6 +350,14 @@ export default function Invoice() {
               >
                 <Edit2 className="w-4 h-4" />
                 Edit sale
+              </Button>
+              <Button
+                onClick={handleSendWhatsApp}
+                variant="outline"
+                className="gap-2 border-green-600 text-green-700 hover:bg-green-50"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Send on WhatsApp
               </Button>
               <Button
                 onClick={handleDownloadPDF}
