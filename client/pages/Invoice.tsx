@@ -100,6 +100,8 @@ export default function Invoice() {
             const project: Project = {
               id: data.id,
               modelNo: data.model_no || "",
+              brand: data.brand || "",
+              vehicleModel: data.vehicle_model || "",
               customerName: data.customer_name,
               contactNo: data.contact_no,
               location: data.location,
