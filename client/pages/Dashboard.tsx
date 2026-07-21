@@ -1,5 +1,5 @@
 import Layout from "@/components/Layout";
-import { BarChart3, Briefcase, CalendarCheck2, Boxes, ShieldCheck, Wrench, Users, Receipt, Truck, Bell, X } from "lucide-react";
+import { BarChart3, Briefcase, CalendarCheck2, Boxes, ShieldCheck, Wrench, Users, Receipt, Truck, Bell, X, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -182,9 +182,26 @@ export default function Dashboard() {
                   <Briefcase className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">SALES</h2>
+                  <h2 className="text-xl font-semibold">SALES DONE</h2>
                   <p className="text-sm text-muted-foreground">
-                    Manage account entries and invoices.
+                    Manage completed sales and invoices.
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              to="/leads"
+              className="rounded-lg border border-border bg-card p-6 hover:border-primary hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="rounded-md bg-amber-100 p-3 text-amber-700">
+                  <Target className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">LEADS REQUIRED</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Track customer information and remarks.
                   </p>
                 </div>
               </div>

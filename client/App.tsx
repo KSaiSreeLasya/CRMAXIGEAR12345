@@ -22,6 +22,7 @@ import Dealers from "./pages/Dealers";
 import AdminEmployees from "./pages/AdminEmployees";
 import AdminSettings from "./pages/AdminSettings";
 import Delivery from "./pages/Delivery";
+import Leads from "./pages/Leads";
 import NotFound from "./pages/NotFound";
 import { hydrateAuthTokenFromSupabase, isAuthenticated } from "./lib/auth";
 import { supabase } from "./lib/supabase";
@@ -58,6 +59,7 @@ function AppRoutesContent() {
       <Route path="/admin-employees" element={<ProtectedRoute element={<AdminEmployees />} />} />
       <Route path="/admin-settings" element={<ProtectedRoute element={<AdminSettings />} />} />
       <Route path="/delivery" element={<ProtectedRoute element={<Delivery />} />} />
+      <Route path="/leads" element={<ProtectedRoute element={<Leads />} />} />
       <Route
         path="/estimation-slip/:estimationId"
         element={<ProtectedRoute element={<EstimationSlip />} />}
