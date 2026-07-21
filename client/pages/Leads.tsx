@@ -1,6 +1,6 @@
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, ArrowLeft, Search as SearchIcon, X } from "lucide-react";
+import { Plus, Trash2, Edit, ArrowLeft, Search as SearchIcon, X, MessageCircle, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -24,6 +24,12 @@ const DEFAULT_LEAD_FORM = {
   remark3: "",
 };
 
+const WHATSAPP_MESSAGE = `🌿 Greetings from Axigear Electric Lounge!
+Wishing you happiness, good health, and safe journeys.
+We are excited to announce the arrival of the latest models at our showroom. Visit us today to explore the latest collection, enjoy a test ride, and experience the future of eco-friendly mobility.
+We look forward to welcoming you!
+– Team Axigear Electric Lounge`;
+
 export default function Leads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -33,6 +39,8 @@ export default function Leads() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -220,6 +228,8 @@ export default function Leads() {
       const updated = leads.filter((item) => item.id !== id);
       setLeads(updated);
       localStorage.setItem("crm_leads", JSON.stringify(updated));
+      setIsDetailModalOpen(false);
+      setSelectedLead(null);
     } catch (error: any) {
       console.error("Error deleting lead:", error);
       alert(error?.message || "Failed to delete lead.");
@@ -236,12 +246,26 @@ export default function Leads() {
     });
     setEditingId(lead.id);
     setIsFormOpen(true);
+    setIsDetailModalOpen(false);
   };
 
   const handleCancel = () => {
     setFormData(DEFAULT_LEAD_FORM);
     setEditingId(null);
     setIsFormOpen(false);
+  };
+
+  const handleShareWhatsApp = (lead: Lead) => {
+    const phoneWithCountryCode = lead.phoneNo.replace(/[^\d+]/g, '');
+    const message = WHATSAPP_MESSAGE;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleViewDetails = (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsDetailModalOpen(true);
   };
 
   const filteredLeads = leads.filter((lead) => {
@@ -462,7 +486,15 @@ export default function Leads() {
                           {lead.createdAt}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleViewDetails(lead)}
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors font-medium text-xs whitespace-nowrap"
+                              title="View lead details"
+                            >
+                              <Eye className="w-3 h-3" />
+                              View
+                            </button>
                             <button
                               onClick={() => handleEditLead(lead)}
                               className="inline-flex items-center gap-1 text-primary hover:text-primary/90 transition-colors font-medium text-xs whitespace-nowrap"
@@ -490,6 +522,101 @@ export default function Leads() {
           )}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {isDetailModalOpen && selectedLead && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Lead Details</h2>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setSelectedLead(null);
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Customer Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Customer Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-border rounded-lg p-4 bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">Customer Name</p>
+                    <p className="text-lg font-medium">{selectedLead.customerName}</p>
+                  </div>
+                  <div className="border border-border rounded-lg p-4 bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">Phone Number</p>
+                    <p className="text-lg font-medium font-mono">{selectedLead.phoneNo}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Remarks */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Remarks</h3>
+                <div className="space-y-3">
+                  {selectedLead.remark1 && (
+                    <div className="border border-border rounded-lg p-4 bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-2 font-semibold">Remark 1</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedLead.remark1}</p>
+                    </div>
+                  )}
+                  {selectedLead.remark2 && (
+                    <div className="border border-border rounded-lg p-4 bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-2 font-semibold">Remark 2</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedLead.remark2}</p>
+                    </div>
+                  )}
+                  {selectedLead.remark3 && (
+                    <div className="border border-border rounded-lg p-4 bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-2 font-semibold">Remark 3</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedLead.remark3}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Information */}
+              <div className="border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground">Created: {selectedLead.createdAt}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <button
+                  onClick={() => handleShareWhatsApp(selectedLead)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+                  title="Share to WhatsApp"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Share to WhatsApp
+                </button>
+                <button
+                  onClick={() => handleEditLead(selectedLead)}
+                  className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 px-4 rounded-lg transition-colors"
+                  title="Edit lead"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteLead(selectedLead.id)}
+                  className="inline-flex items-center justify-center gap-2 bg-destructive hover:bg-destructive/90 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+                  title="Delete lead"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
