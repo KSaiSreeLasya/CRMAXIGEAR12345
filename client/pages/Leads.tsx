@@ -263,6 +263,22 @@ export default function Leads() {
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleBulkWhatsApp = () => {
+    if (filteredLeads.length === 0) {
+      alert("No leads to send messages to.");
+      return;
+    }
+
+    const confirmMessage = `Send WhatsApp message to ${filteredLeads.length} lead(s)?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    filteredLeads.forEach((lead, index) => {
+      setTimeout(() => {
+        handleShareWhatsApp(lead);
+      }, index * 500);
+    });
+  };
+
   const handleViewDetails = (lead: Lead) => {
     setSelectedLead(lead);
     setIsDetailModalOpen(true);
@@ -296,13 +312,23 @@ export default function Leads() {
                 Manage customer information and remarks.
               </p>
             </div>
-            <Button
-              onClick={() => setIsFormOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Lead
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleBulkWhatsApp}
+                variant="outline"
+                className="gap-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Send to All
+              </Button>
+              <Button
+                onClick={() => setIsFormOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Lead
+              </Button>
+            </div>
           </div>
 
           {/* Add/Edit Form */}
