@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/lib/auth";
 
 interface Lead {
   id: string;
+  slno: number;
+  date: string;
   customerName: string;
   phoneNo: string;
   remark1: string;
@@ -17,6 +19,7 @@ interface Lead {
 }
 
 const DEFAULT_LEAD_FORM = {
+  date: new Date().toISOString().split('T')[0],
   customerName: "",
   phoneNo: "",
   remark1: "",
@@ -74,8 +77,10 @@ export default function Leads() {
             throw error;
           }
 
-          const formattedLeads = data?.map((lead: any) => ({
+          const formattedLeads = data?.map((lead: any, index: number) => ({
             id: lead.id,
+            slno: index + 1,
+            date: new Date(lead.date || lead.created_at).toLocaleDateString(),
             customerName: lead.customer_name,
             phoneNo: lead.phone_no,
             remark1: lead.remark1 || "",
@@ -108,6 +113,7 @@ export default function Leads() {
 
     try {
       const payload = {
+        date: formData.date,
         customerName: formData.customerName.trim(),
         phoneNo: formData.phoneNo.trim(),
         remark1: formData.remark1.trim(),
@@ -121,6 +127,7 @@ export default function Leads() {
             const { error } = await supabase
               .from('leads')
               .update({
+                date: payload.date,
                 customer_name: payload.customerName,
                 phone_no: payload.phoneNo,
                 remark1: payload.remark1,
@@ -157,6 +164,7 @@ export default function Leads() {
               .insert([
                 {
                   user_id: user.id,
+                  date: payload.date,
                   customer_name: payload.customerName,
                   phone_no: payload.phoneNo,
                   remark1: payload.remark1,
@@ -173,6 +181,8 @@ export default function Leads() {
 
             created = {
               id: data[0].id,
+              slno: leads.length + 1,
+              date: new Date(data[0].date || new Date()).toLocaleDateString(),
               ...payload,
               createdAt: new Date().toLocaleDateString(),
             };
@@ -182,6 +192,8 @@ export default function Leads() {
             console.error("Error creating lead in Supabase:", supabaseError?.message);
             created = {
               id: `lead_${Date.now()}`,
+              slno: leads.length + 1,
+              date: payload.date,
               ...payload,
               createdAt: new Date().toLocaleDateString(),
             };
@@ -192,6 +204,8 @@ export default function Leads() {
         } else {
           created = {
             id: `lead_${Date.now()}`,
+            slno: leads.length + 1,
+            date: payload.date,
             ...payload,
             createdAt: new Date().toLocaleDateString(),
           };
@@ -238,6 +252,7 @@ export default function Leads() {
 
   const handleEditLead = (lead: Lead) => {
     setFormData({
+      date: lead.date,
       customerName: lead.customerName,
       phoneNo: lead.phoneNo,
       remark1: lead.remark1,
@@ -338,6 +353,17 @@ export default function Leads() {
                 {editingId ? "Edit Lead" : "Add New Lead"}
               </h2>
               <form onSubmit={handleSaveLead} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-semibold mb-2">Date *</label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    required
+                  />
+                </div>
+
                 <div className="md:col-span-1">
                   <label className="block text-sm font-semibold mb-2">Customer Name *</label>
                   <input
@@ -469,6 +495,12 @@ export default function Leads() {
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
                       <th className="px-4 py-3 text-left font-semibold text-foreground">
+                        Sl.No.
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-foreground">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-foreground">
                         Customer Name
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-foreground">
@@ -497,6 +529,8 @@ export default function Leads() {
                         key={lead.id}
                         className="border-b border-border hover:bg-muted/50 transition-colors"
                       >
+                        <td className="px-4 py-3 font-medium text-center">{lead.slno}</td>
+                        <td className="px-4 py-3 text-sm">{lead.date}</td>
                         <td className="px-4 py-3 font-medium">{lead.customerName}</td>
                         <td className="px-4 py-3 font-mono">{lead.phoneNo}</td>
                         <td className="px-4 py-3 text-xs max-w-xs truncate" title={lead.remark1}>
@@ -571,6 +605,14 @@ export default function Leads() {
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold">Customer Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-border rounded-lg p-4 bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">Date</p>
+                    <p className="text-lg font-medium">{selectedLead.date}</p>
+                  </div>
+                  <div className="border border-border rounded-lg p-4 bg-muted/50">
+                    <p className="text-xs text-muted-foreground mb-1">Sl.No.</p>
+                    <p className="text-lg font-medium">{selectedLead.slno}</p>
+                  </div>
                   <div className="border border-border rounded-lg p-4 bg-muted/50">
                     <p className="text-xs text-muted-foreground mb-1">Customer Name</p>
                     <p className="text-lg font-medium">{selectedLead.customerName}</p>
